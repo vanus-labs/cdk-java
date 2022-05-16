@@ -20,11 +20,11 @@ package com.linkall.common.constant;
  * config-related constants
  */
 public class ConfigConstant {
-    public final static String VANCE_CONFIG_PATH = "vance_config_path";
+    public final static String VANCE_CONFIG_PATH = "v_config_path";
     public final static String VANCE_CONFIG_PATH_DV = "/vance/config/config.json";
-    public final static String VANCE_SINK = "vance_sink";
-    public final static String VANCE_SINK_DV = "vance_sink";
-    public final static String VANCE_PORT = "vance_port";
+    public final static String VANCE_SINK = "v_target";
+    public final static String VANCE_SINK_DV = "v_target";
+    public final static String VANCE_PORT = "v_port";
     public final static String VANCE_PORT_DV = "8080";
     public final static String EVENT_DISPLAY = "display";
     public final static String EVENT_DISPLAY_PORT = "9164";
