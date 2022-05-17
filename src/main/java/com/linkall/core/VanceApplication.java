@@ -16,6 +16,7 @@
  */
 package com.linkall.core;
 
+import com.linkall.common.env.ConfigPrinter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,6 +40,7 @@ public class VanceApplication {
             if(!targetFound){
                 LOGGER.error("getAdapter() must return an instance either of Adapter1 or Adapter2");
             }else{
+                ConfigPrinter.printVanceConf();
                 try {
                     connector.start();
                 } catch (Exception e) {
