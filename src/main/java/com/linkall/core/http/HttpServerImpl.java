@@ -37,6 +37,15 @@ public class HttpServerImpl implements HttpServer{
     public static final Vertx vertx = Vertx.vertx();
     private final io.vertx.core.http.HttpServer server = vertx.createHttpServer();
     private final Router router = Router.router(vertx);
+    private HttpResponseInfo ceHandlerRI = new HttpResponseInfo(200,
+            "receive CloudEvent success",
+            500,
+            "invalid CloudEvent format");
+    private HttpResponseInfo simHandlerRI = new HttpResponseInfo(200,
+            "receive success, deliver CloudEvent to "+EnvUtil.getVanceSink()+" success",
+            500,
+            "receive success, deliver CloudEvent to "+EnvUtil.getVanceSink()+" failed");
+
     public HttpServerImpl() {
 
     }
@@ -68,10 +77,7 @@ public class HttpServerImpl implements HttpServer{
                 String vanceSink = EnvUtil.getVanceSink();
                 HttpResponseInfo i= info;
                 if(null == info){
-                    i = new HttpResponseInfo(200,
-                            "receive success, deliver CloudEvent to "+vanceSink+" success",
-                            500,
-                            "receive success, deliver CloudEvent to "+vanceSink+" failed");
+                    i = simHandlerRI;
                 }
                 if(ret) {
                     request.response().setStatusCode(i.getSuccessCode());
@@ -99,10 +105,7 @@ public class HttpServerImpl implements HttpServer{
                     .onSuccess(ce->{
                         HttpResponseInfo i= info;
                         if(null == info){
-                            i = new HttpResponseInfo(200,
-                                    "receive CloudEvent success",
-                                    500,
-                                    "invalid CloudEvent format");
+                            i = ceHandlerRI;
                         }
                         request.response().setStatusCode(i.getSuccessCode());
                         request.response().end(i.getSuccessChunk());
@@ -110,10 +113,7 @@ public class HttpServerImpl implements HttpServer{
                     .onFailure(t->{
                         HttpResponseInfo i= info;
                         if(null == info){
-                            i = new HttpResponseInfo(200,
-                                    "receive CloudEvent success",
-                                    500,
-                                    "invalid CloudEvent format");
+                            i = ceHandlerRI;
                         }
                         request.response().setStatusCode(i.getFailureCode());
                         request.response().end(i.getFailureChunk());
