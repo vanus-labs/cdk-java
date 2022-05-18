@@ -111,6 +111,7 @@ public class HttpServerImpl implements HttpServer{
                         request.response().end(i.getSuccessChunk());
                     })
                     .onFailure(t->{
+                        LOGGER.error("Receive a non-CloudEvent data");
                         HttpResponseInfo i= info;
                         if(null == info){
                             i = ceHandlerRI;
