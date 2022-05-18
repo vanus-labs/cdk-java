@@ -16,9 +16,8 @@
  */
 package com.linkall.core;
 
-public interface Connector {
+public interface Source extends Sink{
 
-    void start() throws Exception;
 
     /**
      * This method return an instance of an Adapter.
@@ -28,7 +27,7 @@ public interface Connector {
      * Otherwise it won't work.
      * <p></p>
      * You should call this method to get an Adapter instance and generate CloudEvents
-     * in {@link Connector#start()} method.
+     * in {@link Source#start()} method.
      * Cast the Adapter instance into the Adapter interface you implemented.
      * @return instance of an adapter
      */
