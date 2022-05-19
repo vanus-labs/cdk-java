@@ -17,6 +17,7 @@
 package com.linkall.core.http;
 
 import com.linkall.common.env.EnvUtil;
+import com.linkall.common.net.URITool;
 import io.cloudevents.CloudEvent;
 import io.cloudevents.http.vertx.VertxMessageFactory;
 import io.cloudevents.jackson.JsonFormat;
@@ -24,8 +25,11 @@ import io.vertx.circuitbreaker.CircuitBreaker;
 import io.vertx.circuitbreaker.CircuitBreakerOptions;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
+import io.vertx.core.MultiMap;
 import io.vertx.core.buffer.Buffer;
+import io.vertx.core.http.impl.headers.HeadersMultiMap;
 import io.vertx.core.json.JsonObject;
+import io.vertx.ext.web.client.HttpRequest;
 import io.vertx.ext.web.client.HttpResponse;
 import io.vertx.ext.web.client.WebClient;
 import io.vertx.ext.web.client.WebClientOptions;
@@ -33,6 +37,9 @@ import org.slf4j.LoggerFactory;
 
 import org.slf4j.Logger;
 
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class HttpClient {
@@ -96,6 +103,27 @@ public class HttpClient {
                     .writeStructured(s, JsonFormat.CONTENT_TYPE);
         };
         return innerDeliver(is,event);
+    }
+    private static HttpRequest<Buffer> obtainGetReq(String uri){
+        HttpRequest<Buffer> req = webClient.get(uri);
+        String host = URITool.getHost(URITool.getURI(uri));
+        LOGGER.info("Host: "+host);
+        if(!URITool.isIP(host)){
+            req = req.host(host);
+        }
+        return req;
+    }
+    public static Future<HttpResponse<Buffer>> sendGetRequest(String uri){
+        return obtainGetReq(uri).send();
+    }
+
+    public static Future<HttpResponse<Buffer>> sendGetRequest(String uri, Map<String,String> headers){
+        HeadersMultiMap multiMap = HeadersMultiMap.httpHeaders();
+        multiMap.addAll(headers);
+        multiMap.forEach(e->{
+            LOGGER.info("> "+e.getKey()+": "+e.getValue());
+        });
+        return obtainGetReq(uri).putHeaders(multiMap).send();
     }
 }
 
