@@ -79,13 +79,10 @@ public class HttpServerImpl implements HttpServer{
                 if(null == info){
                     i = simHandlerRI;
                 }
-                if(ret) {
-                    request.response().setStatusCode(i.getSuccessCode());
-                    request.response().end(i.getSuccessChunk());
-                }else{
-                    request.response().setStatusCode(i.getFailureCode());
-                    request.response().end(i.getFailureChunk());
-                }
+
+                request.response().setStatusCode(i.getSuccessCode());
+                request.response().end(i.getSuccessChunk());
+
             });
         });
     }
