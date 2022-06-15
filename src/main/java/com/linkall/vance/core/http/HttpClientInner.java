@@ -14,16 +14,12 @@
  * limitations under the License.
  *
  */
-package com.linkall.common.constant;
+package com.linkall.vance.core.http;
 
-import java.util.HashMap;
-import static com.linkall.common.constant.ConfigConstant.*;
+import io.vertx.core.Future;
+import io.vertx.core.buffer.Buffer;
+import io.vertx.ext.web.client.HttpResponse;
 
-public class DefaultValues {
-    public static HashMap<String,String> data = new HashMap<>();
-    static {
-        data.put(VANCE_SINK,VANCE_SINK_DV);
-        data.put(VANCE_PORT,VANCE_PORT_DV);
-        data.put(VANCE_CONFIG_PATH,VANCE_CONFIG_PATH_DV);
-    }
+interface HttpClientInner<T> {
+    Future<HttpResponse<Buffer>> send(T t);
 }

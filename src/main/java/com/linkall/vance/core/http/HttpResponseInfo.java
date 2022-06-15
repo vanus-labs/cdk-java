@@ -14,7 +14,7 @@
  * limitations under the License.
  *
  */
-package com.linkall.core.http;
+package com.linkall.vance.core.http;
 
 public class HttpResponseInfo {
     private int successCode;

@@ -14,9 +14,9 @@
  * limitations under the License.
  *
  */
-package com.linkall.core;
+package com.linkall.vance.core;
 
-import com.linkall.common.env.ConfigPrinter;
+import com.linkall.vance.common.env.ConfigPrinter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

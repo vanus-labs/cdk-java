@@ -14,14 +14,15 @@
  * limitations under the License.
  *
  */
-package com.linkall.core;
+package com.linkall.vance.core;
 
 import io.cloudevents.CloudEvent;
 
 /**
  * Adapter describes how original data will be transformed into a CloudEvent
  * @param <D1> D1 stands for Data Type 1
+ * @param <D2> D2 stands for Data Type 2
  */
-public interface Adapter1<D1> extends Adapter{
-    CloudEvent adapt(D1 data);
+public interface Adapter2<D1,D2> extends Adapter{
+    CloudEvent adapt(D1 data, D2 data2);
 }

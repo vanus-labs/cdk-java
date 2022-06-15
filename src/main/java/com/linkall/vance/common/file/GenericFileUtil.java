@@ -14,7 +14,7 @@
  * limitations under the License.
  *
  */
-package com.linkall.common.file;
+package com.linkall.vance.common.file;
 
 import com.google.common.io.Files;
 import com.google.common.io.Resources;

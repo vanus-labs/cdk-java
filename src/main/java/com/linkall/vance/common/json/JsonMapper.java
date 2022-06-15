@@ -14,7 +14,7 @@
  * limitations under the License.
  *
  */
-package com.linkall.common.json;
+package com.linkall.vance.common.json;
 
 import io.cloudevents.CloudEvent;
 import io.vertx.core.json.JsonObject;
