@@ -14,10 +14,10 @@
  * limitations under the License.
  *
  */
-package com.linkall.core.http;
+package com.linkall.vance.core.http;
 
-import com.linkall.common.env.EnvUtil;
-import com.linkall.common.net.URITool;
+import com.linkall.vance.common.env.EnvUtil;
+import com.linkall.vance.common.net.URITool;
 import io.cloudevents.CloudEvent;
 import io.cloudevents.http.vertx.VertxMessageFactory;
 import io.cloudevents.jackson.JsonFormat;
@@ -25,7 +25,6 @@ import io.vertx.circuitbreaker.CircuitBreaker;
 import io.vertx.circuitbreaker.CircuitBreakerOptions;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
-import io.vertx.core.MultiMap;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.impl.headers.HeadersMultiMap;
 import io.vertx.core.json.JsonObject;
@@ -37,8 +36,6 @@ import org.slf4j.LoggerFactory;
 
 import org.slf4j.Logger;
 
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 

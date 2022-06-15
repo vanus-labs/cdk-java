@@ -14,22 +14,16 @@
  * limitations under the License.
  *
  */
-package com.linkall.core;
+package com.linkall.vance.common.constant;
 
-public interface Source extends Sink{
+import java.util.HashMap;
+import static com.linkall.vance.common.constant.ConfigConstant.*;
 
-
-    /**
-     * This method return an instance of an Adapter.
-     * <p></p>
-     * Note: You must return an instance of
-     * {@link com.linkall.core.Adapter1} or {@link com.linkall.core.Adapter2}.
-     * Otherwise it won't work.
-     * <p></p>
-     * You should call this method to get an Adapter instance and generate CloudEvents
-     * in {@link Source#start()} method.
-     * Cast the Adapter instance into the Adapter interface you implemented.
-     * @return instance of an adapter
-     */
-    Adapter getAdapter();
+public class DefaultValues {
+    public static HashMap<String,String> data = new HashMap<>();
+    static {
+        data.put(VANCE_SINK,VANCE_SINK_DV);
+        data.put(VANCE_PORT,VANCE_PORT_DV);
+        data.put(VANCE_CONFIG_PATH,VANCE_CONFIG_PATH_DV);
+    }
 }

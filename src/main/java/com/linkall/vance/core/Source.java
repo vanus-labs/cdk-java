@@ -14,12 +14,22 @@
  * limitations under the License.
  *
  */
-package com.linkall.core.http;
+package com.linkall.vance.core;
 
-import io.vertx.core.Future;
-import io.vertx.core.buffer.Buffer;
-import io.vertx.ext.web.client.HttpResponse;
+public interface Source extends Sink{
 
-interface HttpClientInner<T> {
-    Future<HttpResponse<Buffer>> send(T t);
+
+    /**
+     * This method return an instance of an Adapter.
+     * <p></p>
+     * Note: You must return an instance of
+     * {@link Adapter1} or {@link Adapter2}.
+     * Otherwise it won't work.
+     * <p></p>
+     * You should call this method to get an Adapter instance and generate CloudEvents
+     * in {@link Source#start()} method.
+     * Cast the Adapter instance into the Adapter interface you implemented.
+     * @return instance of an adapter
+     */
+    Adapter getAdapter();
 }

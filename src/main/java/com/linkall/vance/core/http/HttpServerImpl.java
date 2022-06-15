@@ -14,11 +14,11 @@
  * limitations under the License.
  *
  */
-package com.linkall.core.http;
+package com.linkall.vance.core.http;
 
-import com.linkall.common.env.EnvUtil;
-import com.linkall.core.Adapter;
-import com.linkall.core.Adapter2;
+import com.linkall.vance.common.env.EnvUtil;
+import com.linkall.vance.core.Adapter;
+import com.linkall.vance.core.Adapter2;
 import io.cloudevents.CloudEvent;
 import io.cloudevents.core.message.MessageReader;
 import io.cloudevents.http.vertx.VertxMessageFactory;
@@ -42,7 +42,7 @@ public class HttpServerImpl implements HttpServer{
             500,
             "invalid CloudEvent format");
     private HttpResponseInfo simHandlerRI = new HttpResponseInfo(200,
-            "receive success, deliver CloudEvent to "+EnvUtil.getVanceSink()+" success",
+            "receive success, deliver CloudEvent to "+ EnvUtil.getVanceSink()+" success",
             500,
             "receive success, deliver CloudEvent to "+EnvUtil.getVanceSink()+" failed");
 

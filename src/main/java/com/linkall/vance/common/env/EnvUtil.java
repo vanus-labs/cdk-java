@@ -14,10 +14,10 @@
  * limitations under the License.
  *
  */
-package com.linkall.common.env;
+package com.linkall.vance.common.env;
 
-import com.linkall.common.constant.ConfigConstant;
-import com.linkall.common.constant.DefaultValues;
+import com.linkall.vance.common.constant.ConfigConstant;
+import com.linkall.vance.common.constant.DefaultValues;
 
 public class EnvUtil {
     /**

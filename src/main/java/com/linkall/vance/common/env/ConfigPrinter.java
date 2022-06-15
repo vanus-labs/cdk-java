@@ -1,6 +1,6 @@
-package com.linkall.common.env;
+package com.linkall.vance.common.env;
 
-import com.linkall.common.constant.ConfigConstant;
+import com.linkall.vance.common.constant.ConfigConstant;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

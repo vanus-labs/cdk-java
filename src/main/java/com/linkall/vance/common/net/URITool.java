@@ -1,4 +1,4 @@
-package com.linkall.common.net;
+package com.linkall.vance.common.net;
 
 import java.net.URI;
 import java.net.URISyntaxException;

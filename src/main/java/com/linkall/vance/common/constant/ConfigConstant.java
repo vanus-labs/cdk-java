@@ -14,7 +14,7 @@
  * limitations under the License.
  *
  */
-package com.linkall.common.constant;
+package com.linkall.vance.common.constant;
 
 /**
  * config-related constants
