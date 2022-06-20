@@ -1,7 +1,7 @@
 # To configure the environment locally to test the website, check out
 # https://help.github.com/en/github/working-with-github-pages/testing-your-github-pages-site-locally-with-jekyll
 
-title: Java SDK for Vance
+title: cdk-java for Vance
 remote_theme: just-the-docs/just-the-docs
 plugins:
     - jemoji
