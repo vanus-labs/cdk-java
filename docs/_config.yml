@@ -2,6 +2,8 @@
 # https://help.github.com/en/github/working-with-github-pages/testing-your-github-pages-site-locally-with-jekyll
 
 title: cdk-java for Vance
+baseurl: "/cdk-java"
+url: "https://linkall-labs.github.io"
 remote_theme: just-the-docs/just-the-docs
 plugins:
     - jemoji
@@ -20,3 +22,17 @@ aux_links:
         - "https://github.com/linkall-labs/cdk-java"
     "Linkall home":
         - "https://linkall.com/"
+back_to_top: true
+back_to_top_text: "Back to top"
+
+footer_content: "Copyright &copy; 2017-2020 Patrick Marsceill. Distributed by an <a href=\"https://github.com/just-the-docs/just-the-docs/tree/main/LICENSE.txt\">MIT license.</a> <a href=\"https://www.netlify.com/\">This site is powered by Netlify.</a>"
+
+compress_html:
+    clippings: all
+    comments: all
+    endings: all
+    startings: []
+    blanklines: false
+    profile: false
+    # ignore:
+    #   envs: all
