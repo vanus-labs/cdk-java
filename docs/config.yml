@@ -1,0 +1,19 @@
+title: Java CDK for Vance
+remote_theme: just-the-docs/just-the-docs
+plugins:
+  - jemoji
+
+search_enabled: true
+
+gh_edit_link: true
+gh_edit_link_text: "Edit this page on GitHub."
+gh_edit_repository: "https://github.com/linkall-labs/cdk-java"
+gh_edit_branch: "main"
+gh_edit_source: docs
+gh_edit_view_mode: "tree"
+
+aux_links:
+  "GitHub Repository":
+    - "https://github.com/linkall-labs/cdk-java""
+  "Linkall home":
+    - "https://linkall.com/"
