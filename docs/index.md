@@ -1,8 +1,9 @@
 ---
+layout: default
 title: Home
 nav_order: 1
-The Java Connector-Development Kit (CDK) is a collection of Java packages to help you to build a new
-[Vance Connector][vc] in minutes.
+description: "The Java Connector-Development Kit (CDK) is a collection of Java packages to help you to build a new [Vance Connector][vc] in minutes."
+permalink: /
 ---
 
 # Java CDK for Vance
