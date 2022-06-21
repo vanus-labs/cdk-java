@@ -37,3 +37,5 @@ public interface Source extends Sink{
     Adapter getAdapter();
 }
 ```
+
+test
