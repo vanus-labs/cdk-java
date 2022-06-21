@@ -35,11 +35,13 @@ In order to know how to create a new Vance Connector, check out the [API Documen
 If you want to know more about the default HTTP implementation for handling requests or sending CloudEvents out, check out the 
 [HTTP implementations][http].
 
+Developers better have a basic familiarity with the [CloudEvents Specification][ce] and [CloudEvents java-sdk][ce-sdk] before they start coding.
+
 ### Connector Examples
 
 Here are some connector examples developed by cdk-java.
 
-| Connector<div style="width:90px">         | Type          | Description |
+| Connector         | Type          | Description |
 |:-------------|:------------------|:------|
 | [sink-http]    | sink | The HTTP Sink is a Vance Connector which aims to handle incoming CloudEvents in a way that extracts the data part of the original event and deliver these extracted data to the target URL.  |
 | [source-http] | source   | The HTTP Source is a Vance Connector which aims to generate CloudEvents in a way that wraps all headers and body of the original request into the data field of a new CloudEvent. And deliver these CloudEvents to the target URL.  |
@@ -51,3 +53,5 @@ Use them as samples when you want to write a sink or source connector.
 [http]: https://linkall-labs.github.io/cdk-java/http.html
 [sink-http]: https://github.com/linkall-labs/vance/tree/main/connectors/sink-http
 [source-http]: https://github.com/linkall-labs/vance/tree/main/connectors/source-http
+[ce]: https://github.com/cloudevents/spec
+[ce-sdk]: https://github.com/cloudevents/sdk-java
