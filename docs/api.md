@@ -25,17 +25,27 @@ The Sink and Source Interfaces reflect the Sink and Source Connectors respective
 
 ![connector](connector.png)
 
-You have to implement corresponding interfaces when developing a connector.
+You have to implement the corresponding interfaces when developing a connector.
 ```java
 public interface Sink {
+    // write your codes in this start() method
     void start() throws Exception;
 }
 ```
 
 ```java
 public interface Source extends Sink{
+    // A source connector must implement this method to specify an Adapter to tell how the connector will
+    // transform incoming data into a CloudEvent.
     Adapter getAdapter();
 }
 ```
 
-test
+## Adapter Interface
+
+Adapter is an abstract concept used to demonstrate how the Source connector will transform incoming data into
+a CloudEvent.
+
+Currently, your concrete Adapter MUST implement either the Adapter1 or the Adapter2 interface.
+
+![adapter](adapter.png)
