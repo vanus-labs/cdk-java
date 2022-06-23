@@ -11,7 +11,7 @@ permalink: /
 
 ## Introduction
 
-The cdk currently offers utilities to develop a source or a sink connectors including:
+The cdk aims to speed up the development of a vance connector by offering some utilities including:
 - HTTP implementations (either to handle general HTTP requests or CloudEvents)
 - Config implementation to load user-specific configs
 - The ability to interact with the Vance operator
