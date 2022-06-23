@@ -1,11 +1,14 @@
 ---
-title: Vance APIs
-nav_order: 2
+title: Connector Samples
+nav_order: 3
 ---
 
-# Vance APIs
+# Connector Samples
 
-## Connector Entrance
+Now, you're getting more familiar with the basic concepts of vance APIs.
+Let's write two sample connectors with these APIs.
+
+## Source Sample Connector
 
 The cdk provides an easy way to launch your connector application:
 

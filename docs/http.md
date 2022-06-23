@@ -1,11 +1,11 @@
 ---
-title: Vance HTTP
-nav_order: 3
+title: HTTP Implementation
+nav_order: 4
 ---
 
-# Vance Connector HTTP
+# HTTP Implementation
 
-The cdk provides two utilities to help you handler HTTP requests.
+To speed up the development of a vance connector, the CDK offers a number of HTTP utilities.
 
 ## HttpServer
 
@@ -13,6 +13,19 @@ The cdk provides two utilities to help you handler HTTP requests.
 
 `HttpServer` allows you to easily create an HTTP server (based on [Vert.x]). 
 
-As a connector, `HttpServer` generally handlers two types of requests. 
+```java
+HttpServer server = HttpServer.createHttpServer();
+```
+
+### Getting notified of incoming requests
+
+Your HttpServer should set a proper handler to get notified of incoming requests.
+
+If you are developing a source connector dealing with incoming requests, you should use
+
+```
+HttpServer server = HttpServer.createHttpServer();
+server.
+```
 
 [Vert.x]: https://vertx.io/
