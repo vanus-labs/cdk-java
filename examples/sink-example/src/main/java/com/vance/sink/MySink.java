@@ -18,16 +18,16 @@ public class MySink implements Sink {
 
     @Override
     public void start(){
+        // TODO write a HTTP Server which can handle requests based on CloudEvents format
         HttpServer server = HttpServer.createHttpServer();
+        // Use ceHandler method to tell HttpServer logics you want to do with an incoming CloudEvent
         server.ceHandler(event -> {
             int num = eventNum.addAndGet(1);
+            // print number of received events
             LOGGER.info("receive a new event, in total: "+num);
-            //System.out.println("receive a new event, in total: "+num);
+            // Use JsonMapper to wrap a CloudEvent into a JsonObject for better printing
             JsonObject js = JsonMapper.wrapCloudEvent(event);
-            JsonObject data = js.getJsonObject("data");
-            HttpClient.deliver(data);
-            LOGGER.info(data.encodePrettily());
-            //System.out.println(js.encodePrettily());
+            LOGGER.info(js.encodePrettily());
         });
         server.listen();
     }
