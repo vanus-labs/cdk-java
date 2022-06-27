@@ -21,7 +21,7 @@ public class Entrance {
 
 ## Connector Interface
 
-The `Sink` and `Source` Interfaces reflect the Sink and Source Connector respectively.
+The `Sink` and `Source` Interfaces reflect the [Sink and Source Concepts][concept] respectively.
 
 ![connector](connector.png)
 
@@ -53,7 +53,7 @@ Currently, your concrete Adapter MUST implement either the `Adapter1`, or the `A
 Choose an appropriate `Adapter` interface to implement based on the number of your incoming data you need to generate a
 CloudEvent.
 
-For example, if the incoming data is a pure String, you should choose `Adapter1` to use.
+For example, if the incoming data is a pure String, you should choose `Adapter1`, and use `String` as its generic type.
 
 ```java
 public class StringAdapter implements Adapter1<String> {
@@ -78,7 +78,7 @@ public class StringAdapter implements Adapter1<String> {
 ```
 
 If the incoming data is an HTTP request and, you need both headers and the body to generate a CloudEvent, 
-then you should choose `Adapter2` to use.
+then you should choose `Adapter2`, with `HttpServerRequest` and `Buffer` as its generic type, to use.
 
 ```java
 class HttpAdapter implements Adapter2<HttpServerRequest,Buffer> {
@@ -105,3 +105,5 @@ class HttpAdapter implements Adapter2<HttpServerRequest,Buffer> {
     }
 }
 ```
+
+[concept]: https://github.com/linkall-labs/vance-docs/blob/main/docs/concept.md
