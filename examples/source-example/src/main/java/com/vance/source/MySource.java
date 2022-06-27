@@ -39,6 +39,7 @@ public class MySource implements Source {
         }
     }
 
+    // Use Vertx to send HTTP requests, you can choose any HTTP frameworks as you want
     private void sendCloudEvent(CloudEvent event, String targetURL){
         Future<HttpResponse<Buffer>> responseFuture;
         // Send CloudEvent to vance_sink
