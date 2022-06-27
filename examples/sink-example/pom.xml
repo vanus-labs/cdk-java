@@ -3,17 +3,23 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
-        <artifactId>samples</artifactId>
+        <artifactId>examples</artifactId>
         <groupId>com.linkall</groupId>
         <version>1.0.0</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>sink-sample</artifactId>
+    <artifactId>sink-example</artifactId>
 
     <properties>
         <maven.compiler.source>8</maven.compiler.source>
         <maven.compiler.target>8</maven.compiler.target>
     </properties>
-
+    <dependencies>
+        <dependency>
+            <groupId>com.linkall</groupId>
+            <artifactId>cdk-java</artifactId>
+            <version>0.1.0</version>
+        </dependency>
+    </dependencies>
 </project>

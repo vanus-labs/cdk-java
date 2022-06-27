@@ -42,7 +42,7 @@
                 </property>
             </activation>
             <modules>
-                <module>samples</module>
+                <module>examples</module>
             </modules>
         </profile>
         <profile>
