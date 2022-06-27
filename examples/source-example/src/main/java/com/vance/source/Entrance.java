@@ -1,4 +1,4 @@
-package com.vance.samples;
+package com.vance.source;
 
 import com.linkall.vance.core.VanceApplication;
 
