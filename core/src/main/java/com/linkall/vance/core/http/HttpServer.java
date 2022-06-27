@@ -43,7 +43,7 @@ public interface HttpServer {
      * {@link HttpServer#simpleHandler(Adapter2)}
      * to simply tell SDK how to generate a CloudEvent caring about nothing else.
      * @param handler
-     * @param <T> extends {@link io.vertx.core.Handler} and {@link Adapter}
+     * @param <T> extends {@link Handler} and {@link Adapter}
      */
     <T extends Handler<RoutingContext> & Adapter>void handler(T handler);
     //route to a specific path
