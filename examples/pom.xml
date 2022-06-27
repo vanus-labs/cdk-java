@@ -9,11 +9,11 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>samples</artifactId>
+    <artifactId>examples</artifactId>
     <packaging>pom</packaging>
     <modules>
-        <module>source-sample</module>
-        <module>sink-sample</module>
+        <module>source-example</module>
+        <module>sink-example</module>
     </modules>
 
     <properties>
