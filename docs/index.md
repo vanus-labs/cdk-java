@@ -35,7 +35,7 @@ In order to know how to create a new Vance Connector, check out the [API Documen
 If you want to know more about the default HTTP implementation for handling requests or sending CloudEvents out, check out the 
 [HTTP implementations][http].
 
-Developers better have a basic familiarity with the [CloudEvents Specification][ce] and [CloudEvents java-sdk][ce-sdk] before they start coding.
+Developers better have a basic familiarity with the [CloudEvents Specification][ce] and [CloudEvents java-sdk][ce-sdk] before they start writing a connector.
 
 ### Connector Examples
 
