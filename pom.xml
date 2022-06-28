@@ -27,11 +27,56 @@
     </modules>
     <packaging>pom</packaging>
 
+    <name>vance-cdk</name>
+    <url>https://github.com/linkall-labs/cdk-java/</url>
+    <description>Vance CDK for Java</description>
+
+    <scm>
+        <connection>scm:git:git://github.com:linkall-labs/cdk-java.git</connection>
+        <developerConnection>scm:git:git@github.com:linkall-labs/cdk-java.git</developerConnection>
+        <url>https://github.com/linkall-labs/cdk-java/</url>
+        <tag>HEAD</tag>
+    </scm>
+
+    <licenses>
+        <license>
+            <name>The Apache Software License, Version 2.0</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
+    <developers>
+        <developer>
+            <id>JieDing</id>
+            <name>Jie Ding</name>
+        </developer>
+    </developers>
+
     <properties>
         <log4j2.version>2.17.1</log4j2.version>
         <cloudevents.version>2.3.0</cloudevents.version>
         <vertx.version>4.0.0</vertx.version>
+        <!-- Maven plugins -->
+        <maven-surefire-plugin.version>2.22.2</maven-surefire-plugin.version>
+        <maven-editorconfig-plugin.version>0.1.0</maven-editorconfig-plugin.version>
     </properties>
+
+    <distributionManagement>
+        <site>
+            <id>site</id>
+            <url>https://linkall.com</url>
+        </site>
+
+        <snapshotRepository>
+            <id>ossrh</id>
+            <url>https://s01.oss.sonatype.org/content/repositories/snapshots</url>
+        </snapshotRepository>
+        <repository>
+            <id>ossrh</id>
+            <url>https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+        </repository>
+    </distributionManagement>
 
     <profiles>
         <profile>
@@ -55,6 +100,39 @@
             <build>
                 <plugins>
                     <plugin>
+                        <groupId>org.sonatype.plugins</groupId>
+                        <artifactId>nexus-staging-maven-plugin</artifactId>
+                        <version>1.6.8</version>
+                        <extensions>true</extensions>
+                        <configuration>
+                            <serverId>ossrh</serverId>
+                            <nexusUrl>https://s01.oss.sonatype.org/</nexusUrl>
+                            <autoReleaseAfterClose>true</autoReleaseAfterClose>
+                        </configuration>
+                    </plugin>
+
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-gpg-plugin</artifactId>
+                        <version>1.6</version>
+                        <executions>
+                            <execution>
+                                <id>sign-artifacts</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>sign</goal>
+                                </goals>
+                                <configuration>
+                                    <gpgArguments>
+                                        <arg>--batch</arg>
+                                        <arg>--pinentry-mode</arg>
+                                        <arg>loopback</arg>
+                                    </gpgArguments>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-compiler-plugin</artifactId>
                         <version>3.6.0</version>
@@ -68,5 +146,89 @@
         </profile>
     </profiles>
 
+    <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-surefire-plugin</artifactId>
+                    <version>${maven-surefire-plugin.version}</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-jar-plugin</artifactId>
+                    <configuration>
+                        <archive>
+                            <manifestEntries>
+                                <Automatic-Module-Name>${module-name}</Automatic-Module-Name>
+                            </manifestEntries>
+                        </archive>
+                    </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>org.ec4j.maven</groupId>
+                    <artifactId>editorconfig-maven-plugin</artifactId>
+                    <version>${maven-editorconfig-plugin.version}</version>
+                    <executions>
+                        <execution>
+                            <id>check</id>
+                            <phase>verify</phase>
+                            <goals>
+                                <goal>check</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                    <configuration>
+                        <excludes>
+                            <exclude>.gitignore</exclude>
+                            <exclude>LICENSE</exclude>
+                            <exclude>.mvn</exclude>
+                        </excludes>
+                    </configuration>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+        <plugins>
+            <!-- Javadoc jar -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <version>3.2.0</version>
+                <configuration>
+                    <doclint>none</doclint>
+                    <detectLinks/>
+                    <links>
+                        <link>https://docs.spring.io/spring-framework/docs/current/javadoc-api/</link>
+                        <link>https://jakarta.ee/specifications/platform/8/apidocs/</link>
+                        <link>https://kafka.apache.org/25/javadoc/</link>
+                        <link>https://qpid.apache.org/releases/qpid-proton-j-0.33.7/api/</link>
+                        <link>https://fasterxml.github.io/jackson-databind/javadoc/2.10/</link>
+                    </links>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>attach-javadocs</id>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <!-- Sources jar -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+                <version>3.2.1</version>
+                <executions>
+                    <execution>
+                        <id>attach-sources</id>
+                        <goals>
+                            <goal>jar-no-fork</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
 
 </project>
