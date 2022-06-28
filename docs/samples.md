@@ -6,7 +6,8 @@ nav_order: 3
 # Connector Samples
 
 Now, you're getting more familiar with the basic concepts of vance APIs.
-Let's write two sample connectors with these APIs.
+
+Let's try to write some sample connectors with these APIs.
 
 ## Source Sample Connector
 
