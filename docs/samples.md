@@ -16,11 +16,11 @@ Let's go through the details of provided examples (there are two connector sampl
 `Entrance.java` is the entrance of the source connector.
 
 ```java
-public class Entrance {
-    public static void main(String[] args) {
-        VanceApplication.run(MyConnector.class);
-    }
-}
+01 public class Entrance {
+02     public static void main(String[] args) {
+03         VanceApplication.run(MyConnector.class);
+04     }
+05 }
 ```
 
 The `main` method uses a one-line code to easily launch the connector programme.
@@ -58,9 +58,33 @@ The `main` method uses a one-line code to easily launch the connector programme.
 3. Sending CloudEvents to the URL which specified in `resources/config.json`
 
 ```java
-1 public Adapter getAdapter() {
-2     return new MyAdapter();
-3 }
+01 public Adapter getAdapter() {
+02     return new MyAdapter();
+03 }
 ```
+
+`getAdapter()` method is another method declared in `Source` interface. Its purpose is to return an instance of `Adapter` interface.
+
+```java
+01 private void sendCloudEvent(CloudEvent event, String targetURL){
+02    Future<HttpResponse<Buffer>> responseFuture;
+03    // Send CloudEvent to vance_sink
+04    responseFuture = VertxMessageFactory.createWriter(webClient.postAbs(targetURL))
+05            .writeStructured(event, JsonFormat.CONTENT_TYPE); // Use structured mode.
+06    responseFuture.onSuccess(resp->{
+07        LOGGER.info("send CloudEvent success");
+08    }).onFailure(t-> LOGGER.info("send task failed"));
+09 }
+```
+
+`sendCloudEvent()` is a method used to send a CloudEvent to the target URL. In this example, I use the Vert.x as the HTTP framework, but you can choose whatever you want to POST the HTTP request. 
+
+> It's strongly recommended to use one of the HTTP implementations CloudEvent-sdk provided.
+
+### com.vance.source.MyAdapter
+
+`MyAdapter` is the implementation to convert the original data into a CloudEvent.
+
+>⚠️ Note: Don't directly implement `Adapter` interface️. Instead, Implement `Adapter1` or `Adapter2` based on the number of types you need to construct a CloudEvent.
 
 You can write your own logics to obtain original data, and implement your Adapter based on your needs to construct a CloudEvent.
