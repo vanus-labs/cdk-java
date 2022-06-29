@@ -7,7 +7,16 @@ nav_order: 3
 
 Now, you're getting more familiar with the basic concepts of vance APIs.
 
-Let's go through the details of provided examples (there are two connector samples under `examples` directory).
+Let's go through the detail of provided examples (there are two connector samples under `examples` directory).
+
+## Recap the Concept of Source
+
+Before checking out the sample codes, let's recap the concept of a `Source` connector.
+
+> A Source is a connector that implements the following functions:
+> - Retrieves data from an underlying data producer. Vance doesn't limit the way a source retrieves data. (e.g. A source MAY pull data from a message queue or act as a HTTP server waiting for data to be sent to it).
+> - Transforms retrieved data into CloudEvents.
+> - Uses standard HTTP POST requests to send CloudEvents to the target URL specified in V_TARGET.
 
 ## Source Example
 
@@ -52,7 +61,7 @@ The `main` method uses a one-line code to easily launch the connector programme.
 18 }
 ```
 
-`start()` method is one of the methods declared in `Source` interface. It did three things here:
+The `start()` method is one of the methods declared in `Source` interface. It met all [requirements](#recap-the-concept-of-source) the `Source` asks:
 1. Using a for loop to generate original data, which is a String consisted of "Event number" and the index of the loop
 2. Using `adapt()` method from `MyAdapter` to transform a String into a CloudEvent
 3. Sending CloudEvents to the URL which specified in `resources/config.json`
@@ -85,6 +94,30 @@ The `main` method uses a one-line code to easily launch the connector programme.
 
 `MyAdapter` is the implementation to convert the original data into a CloudEvent.
 
->⚠️ Note: Don't directly implement `Adapter` interface️. Instead, Implement `Adapter1` or `Adapter2` based on the number of types you need to construct a CloudEvent.
+>⚠️ Note: Don't directly implement `Adapter` interface️. Instead, implement `Adapter1` or `Adapter2` based on the number of types you need to construct a CloudEvent.
 
-You can write your own logics to obtain original data, and implement your Adapter based on your needs to construct a CloudEvent.
+```java
+01 public class MyAdapter implements Adapter1<String> {
+02    private static final CloudEventBuilder template = CloudEventBuilder.v1();
+03    @Override
+04    public CloudEvent adapt(String data) {
+05        template.withId(UUID.randomUUID().toString());
+06        URI uri = URI.create("vance-http-source");
+07        template.withSource(uri);
+08        template.withType("http");
+09        template.withDataContentType("application/json");
+10        template.withTime(OffsetDateTime.now());
+11        template.withData(data.getBytes());
+12
+13        return template.build();
+14    }
+15 }
+```
+
+In this example, MyAdapter chose `Adapter1` to implement since the only thing it needs to construct a CloudEvent is a String.
+
+Codes between line 5 and 11 are trying to fill required fields of a CloudEvent. Learn more about [CloudEvents Specification][ce] and [CloudEvents java-sdk][ce-sdk] 
+if you are not familiar with them.
+
+[ce]: https://github.com/cloudevents/spec
+[ce-sdk]: https://github.com/cloudevents/sdk-java
