@@ -23,7 +23,7 @@ public class Entrance {
 
 The `Sink` and `Source` Interfaces reflect the [Sink and Source Concepts][concept] respectively.
 
-![connector](connector.png)
+![connector](images/connector.png)
 
 You have to implement the corresponding interface when developing a connector.
 ```java
@@ -48,7 +48,7 @@ a CloudEvent.
 
 Currently, your concrete Adapter MUST implement either the `Adapter1`, or the `Adapter2` interface.
 
-![adapter](adapter.png)
+![adapter](images/adapter.png)
 
 Choose an appropriate `Adapter` interface to implement based on the number of your incoming data you need to generate a
 CloudEvent.
