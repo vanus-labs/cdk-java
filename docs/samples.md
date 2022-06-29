@@ -1,5 +1,5 @@
 ---
-title: Connector Samples
+title: Source Example
 nav_order: 3
 ---
 
@@ -7,11 +7,13 @@ nav_order: 3
 
 Now, you're getting more familiar with the basic concepts of vance APIs.
 
-Let's try to write some sample connectors with these APIs.
+Let's go through the details of provided examples (there are two connector samples under `examples` directory).
 
-## Source Sample Connector
+## Source Example
 
-The cdk provides an easy way to launch your connector application:
+### com.vance.source.Entrance
+
+`Entrance.java` is the entrance of the source connector.
 
 ```java
 public class Entrance {
@@ -21,91 +23,44 @@ public class Entrance {
 }
 ```
 
-`MyConnector` is the implementation of either a [Sink or Source](#connector-interface) interface.
+The `main` method uses a one-line code to easily launch the connector programme.
 
-## Connector Interface
+`VanceApplication.run()` only needs one parameter, which is the implementation of either a [Sink or Source](api.md#connector-interface) interface.
 
-The `Sink` and `Source` Interfaces reflect the Sink and Source Connector respectively.
+### com.vance.source.MySource
 
-![connector](connector.png)
-
-You have to implement the corresponding interface when developing a connector.
-```java
-public interface Sink {
-    // write your codes in this start() method
-    void start() throws Exception;
-}
-```
+`MySource` implemented all methods of `Source` interface.
 
 ```java
-public interface Source extends Sink{
-    // A source connector must implement this method to specify an Adapter to tell how the connector will
-    // transform incoming data into a CloudEvent.
-    Adapter getAdapter();
-}
+01 @Override
+02 public void start(){
+03    // TODO Initialize your Adapter
+04    MyAdapter adapter = (MyAdapter) getAdapter();
+05
+06    // TODO receive your original data and transform it into a CloudEvent via your Adapter
+07    // In this sample, we use a String as the original data
+08    for (int i = 0; i < NUM_EVENTS; i++) {
+09        String data = "Event number " + i;
+10        // TODO: construct CloudEvents
+11        CloudEvent event = adapter.adapt(data);
+12        // Use EnvUtil to get the target URL the source will send to
+13        // You can replace the default sink URL with yours in resources/config.json
+14        String sink = EnvUtil.getVanceSink();
+15        // TODO: deliver CloudEvents to endpoint ${V_TARGET}
+16        sendCloudEvent(event,sink);
+17    }
+18 }
 ```
 
-## Adapter Interface
-
-`Adapter` is an abstract concept used to demonstrate how the Source connector will transform incoming data into
-a CloudEvent.
-
-Currently, your concrete Adapter MUST implement either the `Adapter1`, or the `Adapter2` interface.
-
-![adapter](adapter.png)
-
-Choose an appropriate `Adapter` interface to implement based on the number of your incoming data you need to generate a
-CloudEvent.
-
-For example, if the incoming data is a pure String, you should choose `Adapter1` to use.
+`start()` method is one of the methods declared in `Source` interface. It did three things here:
+1. Using a for loop to generate original data, which is a String consisted of "Event number" and the index of the loop
+2. Using `adapt()` method from `MyAdapter` to transform a String into a CloudEvent
+3. Sending CloudEvents to the URL which specified in `resources/config.json`
 
 ```java
-public class StringAdapter implements Adapter1<String> {
-    private static final CloudEventBuilder template = CloudEventBuilder.v1();
-    @Override
-    public CloudEvent adapt(String originalData) {
-        template.withId(UUID.randomUUID().toString());
-        URI uri = URI.create("sample-source");
-        template.withSource(uri);
-        template.withType("http");
-        template.withDataContentType("application/json");
-        template.withTime(OffsetDateTime.now());
-
-        JsonObject data = new JsonObject();
-        data.put("mydata",originalData);
-        
-        template.withData(data.toBuffer().getBytes());
-
-        return template.build();
-    }
-}
+1 public Adapter getAdapter() {
+2     return new MyAdapter();
+3 }
 ```
 
-If the incoming data is an HTTP request and, you need both headers and the body to generate a CloudEvent, 
-then you should choose `Adapter2` to use.
-
-```java
-class HttpAdapter implements Adapter2<HttpServerRequest,Buffer> {
-    private static final CloudEventBuilder template = CloudEventBuilder.v1();
-    @Override
-    public CloudEvent adapt(HttpServerRequest req, Buffer buffer) {
-        template.withId(UUID.randomUUID().toString());
-        URI uri = URI.create("vance-http-source");
-        template.withSource(uri);
-        template.withType("http");
-        template.withDataContentType("application/json");
-        template.withTime(OffsetDateTime.now());
-
-        JsonObject data = new JsonObject();
-        JsonObject headers = new JsonObject();
-        req.headers().forEach((m)-> headers.put(m.getKey(),m.getValue()));
-        data.put("headers",headers);
-        JsonObject body = buffer.toJsonObject();
-        data.put("body",body);
-        
-        template.withData(data.toBuffer().getBytes());
-
-        return template.build();
-    }
-}
-```
+You can write your own logics to obtain original data, and implement your Adapter based on your needs to construct a CloudEvent.
