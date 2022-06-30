@@ -59,12 +59,12 @@ The `start()` method above mainly:
 
 - Line 4 created an HTTP server by using the `HttpServer` provided by the cdk
 - The `ceHandler() method` registers a `Handler` to deal with CloudEvents for the server. 
-- Codes between line 6 and 13 demonstrated how to deal with an incoming CloudEvent request, which is simply logging it in json format.
+- Codes between line 6 and 13 demonstrated how to deal with an incoming CloudEvent request, which is simply to log the event in json format.
 - Line 11 wrapped the incoming CloudEvent into a JsonObject for better printing
 
 Utilities like `HttpServer` and `JsonMapper` are designed to reduce redundant works for developers.
 
-You can write your own logics to handle incoming CloudEvents, for example, extract some fields and insert them into a MySQL database. Then, it becomes a MySQL sink.
+You can write your own logics to handle incoming CloudEvents, for example, extract some fields from CloudEvents and insert them into a MySQL database. Then, the connector becomes a MySQL sink.
 
 [ce]: https://github.com/cloudevents/spec
 [ce-sdk]: https://github.com/cloudevents/sdk-java
