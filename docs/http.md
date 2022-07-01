@@ -21,7 +21,7 @@ HttpServer server = HttpServer.createHttpServer();
 
 Your HttpServer should set a proper handler to get notified of incoming requests.
 
-If you are developing a source connector dealing with incoming requests, you should use
+
 
 ```
 HttpServer server = HttpServer.createHttpServer();
