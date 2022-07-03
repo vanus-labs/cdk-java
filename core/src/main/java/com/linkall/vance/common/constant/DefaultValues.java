@@ -25,5 +25,7 @@ public class DefaultValues {
         data.put(VANCE_SINK,VANCE_SINK_DV);
         data.put(VANCE_PORT,VANCE_PORT_DV);
         data.put(VANCE_CONFIG_PATH,VANCE_CONFIG_PATH_DV);
+        data.put(VANCE_KV,VANCE_KV_DV);
+        data.put(ETCD_URL,ETCD_URL_DV);
     }
 }
