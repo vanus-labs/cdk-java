@@ -81,4 +81,6 @@ public class EnvUtil {
         return getEnvOrConfigOrDefault(ConfigConstant.VANCE_PORT);
     }
 
+    public static String getKVStore(){ return getEnvOrConfigOrDefault(ConfigConstant.VANCE_KV); }
+
 }

@@ -26,7 +26,9 @@ public class ConfigConstant {
     public final static String VANCE_SINK_DV = "v_target";
     public final static String VANCE_PORT = "v_port";
     public final static String VANCE_PORT_DV = "8080";
-    public final static String EVENT_DISPLAY = "display";
-    public final static String EVENT_DISPLAY_PORT = "9164";
-    public final static String DEFAULT_DISPLAY_URL = "http://display:9164";
+    public final static String VANCE_KV = "v_store";
+    public final static String VANCE_KV_DV = KVImpl.LOCAL_KV.getValue();
+    public final static String VANCE_KV_FILE = "/vance/data/data.json";
+    public final static String ETCD_URL = "etcd_url";
+    public final static String ETCD_URL_DV = "http://localhost:2379";
 }
