@@ -1,50 +1,62 @@
 package com.linkall.vance.common.store;
 
-import com.google.common.io.Files;
 import com.linkall.vance.common.constant.ConfigConstant;
-import com.linkall.vance.common.file.GenericFileUtil;
 import com.linkall.vance.core.KVStore;
-import com.linkall.vance.core.VanceApplication;
-import io.vertx.core.json.JsonObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
+import java.sql.*;
 
 public class FileKVStoreImpl implements KVStore {
     private static final Logger LOGGER = LoggerFactory.getLogger(FileKVStoreImpl.class);
-    private static JsonObject map;
     private static File f = new File(ConfigConstant.VANCE_KV_FILE);
+    private static Connection connection = null;
+    private static Statement statement = null;
     static{
         if(f.exists()){
             try {
-                map = new JsonObject(GenericFileUtil.readFile(ConfigConstant.VANCE_KV_FILE));
-            } catch (IOException e) {
-                e.printStackTrace();
+                connection = DriverManager.getConnection("jdbc:sqlite:"+ConfigConstant.VANCE_KV_FILE);
+                statement = connection.createStatement();
+                statement.setQueryTimeout(30);
+                statement.executeUpdate("create table if not exists data (key string primary key, value string)");
+
+            } catch (SQLException throwables) {
+                throwables.printStackTrace();
             }
         }else{
             LOGGER.info("File <"+ConfigConstant.VANCE_KV_FILE+"> doesn't exist.\n" +
                     "Please mount a file or choose other store implementation");
-            map = new JsonObject();
         }
     }
 
     @Override
     public void put(String key, String value) {
-        map.put(key,value);
-        if(f.exists()){
-            try {
-                Files.write(map.toString().getBytes(StandardCharsets.UTF_8),f);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+        try {
+            statement.executeUpdate("insert into data values('"+key+"', '"+value+"')"+
+                    "on conflict(key)"+
+                    "do update set value = '"+ value+"'");
+        } catch (SQLException throwables) {
+            throwables.printStackTrace();
         }
     }
 
     @Override
     public String get(String key) {
-        return map.getString(key);
+        ResultSet rs = null;
+        try {
+            rs = statement.executeQuery("select value from data where key='"+key+"'");
+        } catch (SQLException throwables) {
+            throwables.printStackTrace();
+        }
+        String s=null;
+        try {
+            if(rs.next()){
+                s = rs.getString("value");
+            }
+        } catch (SQLException throwables) {
+            throwables.printStackTrace();
+        }
+        return s;
     }
 }
