@@ -1,6 +1,7 @@
 package com.linkall.vance.common.store;
 
 import com.linkall.vance.common.constant.ConfigConstant;
+import com.linkall.vance.common.env.EnvUtil;
 import com.linkall.vance.core.KVStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -10,13 +11,14 @@ import java.sql.*;
 
 public class FileKVStoreImpl implements KVStore {
     private static final Logger LOGGER = LoggerFactory.getLogger(FileKVStoreImpl.class);
-    private static File f = new File(ConfigConstant.VANCE_KV_FILE);
+    private static String fileName = EnvUtil.getEnvOrConfigOrDefault(ConfigConstant.VANCE_KV_FILE);
+    private static File f = new File(fileName);
     private static Connection connection = null;
     private static Statement statement = null;
     static{
         if(f.exists()){
             try {
-                connection = DriverManager.getConnection("jdbc:sqlite:"+ConfigConstant.VANCE_KV_FILE);
+                connection = DriverManager.getConnection("jdbc:sqlite:"+fileName);
                 statement = connection.createStatement();
                 statement.setQueryTimeout(30);
                 statement.executeUpdate("create table if not exists data (key string primary key, value string)");
