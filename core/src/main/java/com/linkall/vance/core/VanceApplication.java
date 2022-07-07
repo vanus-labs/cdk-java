@@ -21,8 +21,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class VanceApplication {
-    private static final String SRC_INTERFACE_NAME = "interface com.linkall.core.Source";
-    private static final String SINK_INTERFACE_NAME = "interface com.linkall.core.Sink";
+    private static final String SRC_INTERFACE_NAME = "interface com.linkall.vance.core.Source";
+    private static final String SINK_INTERFACE_NAME = "interface com.linkall.vance.core.Sink";
     private static final Logger LOGGER = LoggerFactory.getLogger(VanceApplication.class);
     public static void run (Class<? extends Sink> conClass){
         String interfaceName = conClass.getGenericInterfaces()[0].toString();
