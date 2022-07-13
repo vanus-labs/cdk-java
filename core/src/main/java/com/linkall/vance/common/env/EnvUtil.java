@@ -18,12 +18,10 @@ package com.linkall.vance.common.env;
 
 import com.linkall.vance.common.constant.ConfigConstant;
 import com.linkall.vance.common.constant.DefaultValues;
-import com.sun.tools.doclint.Env;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.xml.bind.DatatypeConverter;
-import java.io.UnsupportedEncodingException;
+import java.util.Base64;
 
 public class EnvUtil {
     private static final Logger LOGGER = LoggerFactory.getLogger(EnvUtil.class);
@@ -42,28 +40,15 @@ public class EnvUtil {
      * @return decoded secret value; return null if key doesn't exist.
      */
     public static String getSecret(String key){
-        if(!key.startsWith("s_") && !key.startsWith("S_")){
-            LOGGER.error("Secret key must start with s_");
-            return null;
-        }
         String ret;
         ret = System.getenv(key.toUpperCase());
         if(null == ret && null!= ConfigLoader.getUserSecret()){
             ret = ConfigLoader.getUserSecret().getString(key.toLowerCase());
         }
-        return decodeBase64(ret);
+        if (null == ret) return null;
+        return new String(Base64.getDecoder().decode(ret));
     }
-    private static String decodeBase64(String base64Str){
-        if(null == base64Str) return null;
-        String decoded="";
-        byte[] base64Data = DatatypeConverter.parseBase64Binary(base64Str);
-        try {
-            decoded = new String(base64Data, "utf-8");
-        } catch (UnsupportedEncodingException e) {
-            e.printStackTrace();
-        }
-        return decoded;
-    }
+
     /**
      * EnvUtil retrieves data following the order of (1. user-set env, 2. user-set config)
      * So, the result value might either be a user-set variable or an value from the config file.
@@ -126,5 +111,4 @@ public class EnvUtil {
     }
 
     public static String getKVStore(){ return getEnvOrConfigOrDefault(ConfigConstant.VANCE_KV); }
-
 }
