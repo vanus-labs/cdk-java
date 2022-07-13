@@ -27,7 +27,7 @@ public class FileKVStoreImpl implements KVStore {
                 throwables.printStackTrace();
             }
         }else{
-            LOGGER.info("File <"+ConfigConstant.VANCE_KV_FILE+"> doesn't exist.\n" +
+            LOGGER.info("File <"+fileName+"> doesn't exist.\n" +
                     "Please mount a file or choose other store implementation");
         }
     }
