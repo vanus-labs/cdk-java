@@ -22,6 +22,7 @@ package com.linkall.vance.common.constant;
 public class ConfigConstant {
     public final static String VANCE_CONFIG_PATH = "v_config_path";
     public final static String VANCE_CONFIG_PATH_DV = "/vance/config/config.json";
+    public final static String VANCE_SECRET_PATH_DV = "/vance/secret/secret.json";
     public final static String VANCE_SINK = "v_target";
     public final static String VANCE_SINK_DV = "v_target";
     public final static String VANCE_PORT = "v_port";
