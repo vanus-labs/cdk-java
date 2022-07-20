@@ -1,6 +1,6 @@
 package com.vance.source;
 
-import com.linkall.vance.common.env.EnvUtil;
+import com.linkall.vance.common.config.ConfigUtil;
 import com.linkall.vance.core.Adapter;
 import com.linkall.vance.core.Source;
 import io.cloudevents.CloudEvent;
@@ -33,7 +33,7 @@ public class MySource implements Source {
             CloudEvent event = adapter.adapt(data);
             // Use EnvUtil to get the target URL the source will send to
             // You can replace the default sink URL with yours in resources/config.json
-            String sink = EnvUtil.getVanceSink();
+            String sink = ConfigUtil.getVanceSink();
             // TODO: deliver CloudEvents to endpoint ${V_TARGET}
             sendCloudEvent(event,sink);
         }

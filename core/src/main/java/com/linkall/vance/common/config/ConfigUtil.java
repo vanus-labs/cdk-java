@@ -14,70 +14,73 @@
  * limitations under the License.
  *
  */
-package com.linkall.vance.common.env;
+package com.linkall.vance.common.config;
 
 import com.linkall.vance.common.constant.ConfigConstant;
 import com.linkall.vance.common.constant.DefaultValues;
+import io.vertx.core.json.JsonArray;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Base64;
+import java.util.ArrayList;
+import java.util.List;
 
-public class EnvUtil {
-    private static final Logger LOGGER = LoggerFactory.getLogger(EnvUtil.class);
+
+public class ConfigUtil {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ConfigUtil.class);
     /**
-     * Get users' config value according to a specific key
+     * Get a config value according to a specific key
      * @param key
      * @return config value; return null if key is doesn't exist.
      */
-    public static String getConfig(String key){
-        return getEnvOrConfig(key);
-    }
-
-    /**
-     * Get decoded value of users' secrets according to a specific key.
-     * @param key
-     * @return decoded secret value; return null if key doesn't exist.
-     */
-    public static String getSecret(String key){
+    public static String getString(String key){
         String ret;
         ret = System.getenv(key.toUpperCase());
-        if(null == ret && null!= ConfigLoader.getUserSecret()){
-            ret = ConfigLoader.getUserSecret().getString(key.toLowerCase());
-        }
-        if (null == ret) return null;
-        return new String(Base64.getDecoder().decode(ret));
-    }
-
-    /**
-     * EnvUtil retrieves data following the order of (1. user-set env, 2. user-set config)
-     * So, the result value might either be a user-set variable or an value from the config file.
-     * Note: This method may return a null if it cannot find data either in envs or configs.
-     * @param name
-     * @return
-     */
-    public static String getEnvOrConfig(String name){
-        String ret;
-        ret = System.getenv(name.toUpperCase());
         //read from userConfig if env doesn't exist
         if(null == ret && null!= ConfigLoader.getUserConfig()){
-            ret = ConfigLoader.getUserConfig().getString(name.toLowerCase());
+            ret = ConfigLoader.getUserConfig().getString(key);
         }
         return ret;
     }
 
+    public static List<String> getStringArray(String key){
+        String ret = System.getenv(key.toUpperCase());
+        if(null != ret){
+            if(!ret.contains(",")){
+                LOGGER.error("env "+key+" doesn't have an array Value. It must have a comma to split elements");
+            }else{
+                String[] strArr = ret.split(",");
+                List<String> arr = new ArrayList<>(strArr.length);
+                for (String s: strArr) {
+                    arr.add(s);
+                }
+                return arr;
+            }
+        }
+        if(null!= ConfigLoader.getUserConfig()){
+            JsonArray jsonArray = ConfigLoader.getUserConfig().getJsonArray(key);
+            List<String> arr = new ArrayList<>(jsonArray.size());
+            jsonArray.forEach((event)->{
+                arr.add(event.toString());
+            });
+            return arr;
+        }
+
+        return null;
+    }
+
     /**
-     * Same as {@link EnvUtil#getEnvOrConfig(String)}. This method retrieves data from env and config first.
+     * Same as {@link ConfigUtil#getString(String)}. This method retrieves data from env and config first.
      * If this method cannot find value from above positions, it will try to get
      * a default value in the SDK.
      * <p></p>
-     * Note: Users should choose {@link EnvUtil#getEnvOrConfig(String)} to use
+     * Note: Users should choose {@link ConfigUtil#getString(String)} to use
      * since getting a not existed default value may throw an exception.
      * @param name
      * @return
      */
     public static String getEnvOrConfigOrDefault(String name){
-        String ret = getEnvOrConfig(name);
+        String ret = getString(name);
         if(null == ret){
             ret = DefaultValues.data.get(name.toLowerCase());
         }

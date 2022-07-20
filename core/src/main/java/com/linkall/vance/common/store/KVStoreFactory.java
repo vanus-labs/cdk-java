@@ -1,6 +1,6 @@
 package com.linkall.vance.common.store;
 
-import com.linkall.vance.common.env.EnvUtil;
+import com.linkall.vance.common.config.ConfigUtil;
 import com.linkall.vance.common.file.GenericFileUtil;
 import com.linkall.vance.core.KVStore;
 import io.vertx.core.json.JsonObject;
@@ -50,7 +50,7 @@ public class KVStoreFactory {
     }
 
     public static KVStore createKVStore()  {
-        return getOrCreateInstance(stores.getString(EnvUtil.getKVStore()));
+        return getOrCreateInstance(stores.getString(ConfigUtil.getKVStore()));
     }
 
     public static void main(String[] args) {

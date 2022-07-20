@@ -16,7 +16,7 @@
  */
 package com.linkall.vance.core.http;
 
-import com.linkall.vance.common.env.EnvUtil;
+import com.linkall.vance.common.config.ConfigUtil;
 import com.linkall.vance.common.net.URITool;
 import io.cloudevents.CloudEvent;
 import io.cloudevents.http.vertx.VertxMessageFactory;
@@ -80,21 +80,21 @@ public class HttpClient {
     }
 
     public static boolean deliver(JsonObject json){
-        String vanceSink = EnvUtil.getVanceSink();
+        String vanceSink = ConfigUtil.getVanceSink();
         HttpClientInner<JsonObject> is = (s)->{
             return webClient.postAbs(vanceSink).sendJsonObject(s);
         };
         return innerDeliver(is,json);
     }
     public static boolean deliver(Buffer buffer){
-        String vanceSink = EnvUtil.getVanceSink();
+        String vanceSink = ConfigUtil.getVanceSink();
         HttpClientInner<Buffer> is = (s)->{
             return webClient.postAbs(vanceSink).sendBuffer(s);
         };
         return innerDeliver(is,buffer);
     }
     public static boolean deliver(CloudEvent event){
-        String vanceSink = EnvUtil.getVanceSink();
+        String vanceSink = ConfigUtil.getVanceSink();
         HttpClientInner<CloudEvent> is = (s)->{
             return VertxMessageFactory.createWriter(webClient.postAbs(vanceSink))
                     .writeStructured(s, JsonFormat.CONTENT_TYPE);

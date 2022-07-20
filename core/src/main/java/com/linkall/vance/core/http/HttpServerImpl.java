@@ -16,7 +16,7 @@
  */
 package com.linkall.vance.core.http;
 
-import com.linkall.vance.common.env.EnvUtil;
+import com.linkall.vance.common.config.ConfigUtil;
 import com.linkall.vance.core.Adapter;
 import com.linkall.vance.core.Adapter2;
 import io.cloudevents.CloudEvent;
@@ -42,9 +42,9 @@ public class HttpServerImpl implements HttpServer{
             500,
             "invalid CloudEvent format");
     private HttpResponseInfo simHandlerRI = new HttpResponseInfo(200,
-            "receive success, deliver CloudEvent to "+ EnvUtil.getVanceSink()+" success",
+            "receive success, deliver CloudEvent to "+ ConfigUtil.getVanceSink()+" success",
             500,
-            "receive success, deliver CloudEvent to "+EnvUtil.getVanceSink()+" failed");
+            "receive success, deliver CloudEvent to "+ ConfigUtil.getVanceSink()+" failed");
 
     public HttpServerImpl() {
 
@@ -74,7 +74,7 @@ public class HttpServerImpl implements HttpServer{
             request.bodyHandler(buffer->{
                 CloudEvent ce = adapter.adapt(request,buffer);
                 boolean ret = HttpClient.deliver(ce);
-                String vanceSink = EnvUtil.getVanceSink();
+                String vanceSink = ConfigUtil.getVanceSink();
                 HttpResponseInfo i= info;
                 if(null == info){
                     i = simHandlerRI;
@@ -121,7 +121,7 @@ public class HttpServerImpl implements HttpServer{
 
     @Override
     public void listen() {
-        int port = Integer.parseInt(EnvUtil.getPort());
+        int port = Integer.parseInt(ConfigUtil.getPort());
         server.listen(port, server -> {
             if (server.succeeded()) {
                 LOGGER.info("HttpServer is listening on port: "+server.result().actualPort());

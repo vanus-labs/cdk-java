@@ -6,7 +6,7 @@ import com.ibm.etcd.client.EtcdClient;
 import com.ibm.etcd.client.KvStoreClient;
 import com.ibm.etcd.client.kv.KvClient;
 import com.linkall.vance.common.constant.ConfigConstant;
-import com.linkall.vance.common.env.EnvUtil;
+import com.linkall.vance.common.config.ConfigUtil;
 import com.linkall.vance.core.KVStore;
 
 import java.nio.charset.StandardCharsets;
@@ -16,7 +16,7 @@ public class EtcdKVStoreImpl implements KVStore {
     private static KvStoreClient client;
     private static KvClient kvClient;
     static {
-        String etcdEP = EnvUtil.getEnvOrConfigOrDefault(ConfigConstant.ETCD_URL);
+        String etcdEP = ConfigUtil.getEnvOrConfigOrDefault(ConfigConstant.ETCD_URL);
         client = EtcdClient.forEndpoints(etcdEP).withPlainText().build();
         kvClient = client.getKvClient();
     }

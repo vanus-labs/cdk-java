@@ -14,7 +14,7 @@
  * limitations under the License.
  *
  */
-package com.linkall.vance.common.env;
+package com.linkall.vance.common.config;
 
 import com.linkall.vance.common.file.GenericFileUtil;
 import io.vertx.core.json.JsonObject;
@@ -30,7 +30,7 @@ public class ConfigLoader {
     public static JsonObject userConfig = null;
     public static JsonObject userSecret = null;
     static{
-        String configPath = EnvUtil.getConfigPath();
+        String configPath = ConfigUtil.getConfigPath();
         try {
             userConfig =  new JsonObject(GenericFileUtil.readFile(configPath));
         } catch (IOException e) {
