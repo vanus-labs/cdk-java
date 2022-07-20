@@ -16,7 +16,7 @@
  */
 package com.linkall.vance.core;
 
-import com.linkall.vance.common.env.ConfigPrinter;
+import com.linkall.vance.common.config.ConfigPrinter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

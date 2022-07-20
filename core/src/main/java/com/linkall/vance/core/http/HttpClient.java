@@ -16,7 +16,7 @@
  */
 package com.linkall.vance.core.http;
 
-import com.linkall.vance.common.env.ConfigUtil;
+import com.linkall.vance.common.config.ConfigUtil;
 import com.linkall.vance.common.net.URITool;
 import io.cloudevents.CloudEvent;
 import io.cloudevents.http.vertx.VertxMessageFactory;

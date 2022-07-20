@@ -1,4 +1,4 @@
-package com.linkall.vance.common.env;
+package com.linkall.vance.common.config;
 
 import com.linkall.vance.common.constant.ConfigConstant;
 import org.slf4j.Logger;

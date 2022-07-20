@@ -14,12 +14,7 @@
  * limitations under the License.
  *
  */
-package com.linkall.vance.common.env;
-
-import com.linkall.vance.common.constant.ConfigConstant;
-import com.linkall.vance.common.constant.DefaultValues;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+package com.linkall.vance.common.config;
 
 import java.util.Base64;
 

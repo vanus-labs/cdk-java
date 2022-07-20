@@ -14,7 +14,7 @@
  * limitations under the License.
  *
  */
-package com.linkall.vance.common.env;
+package com.linkall.vance.common.config;
 
 import com.linkall.vance.common.file.GenericFileUtil;
 import io.vertx.core.json.JsonObject;

@@ -6,7 +6,7 @@ import com.ibm.etcd.client.EtcdClient;
 import com.ibm.etcd.client.KvStoreClient;
 import com.ibm.etcd.client.kv.KvClient;
 import com.linkall.vance.common.constant.ConfigConstant;
-import com.linkall.vance.common.env.ConfigUtil;
+import com.linkall.vance.common.config.ConfigUtil;
 import com.linkall.vance.core.KVStore;
 
 import java.nio.charset.StandardCharsets;

@@ -1,6 +1,6 @@
 package com.vance.source;
 
-import com.linkall.vance.common.env.ConfigUtil;
+import com.linkall.vance.common.config.ConfigUtil;
 import com.linkall.vance.core.Adapter;
 import com.linkall.vance.core.Source;
 import io.cloudevents.CloudEvent;

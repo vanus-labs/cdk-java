@@ -1,7 +1,7 @@
 package com.linkall.vance.common.store;
 
 import com.linkall.vance.common.constant.ConfigConstant;
-import com.linkall.vance.common.env.ConfigUtil;
+import com.linkall.vance.common.config.ConfigUtil;
 import com.linkall.vance.core.KVStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

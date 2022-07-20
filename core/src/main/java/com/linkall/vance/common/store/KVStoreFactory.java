@@ -1,6 +1,6 @@
 package com.linkall.vance.common.store;
 
-import com.linkall.vance.common.env.ConfigUtil;
+import com.linkall.vance.common.config.ConfigUtil;
 import com.linkall.vance.common.file.GenericFileUtil;
 import com.linkall.vance.core.KVStore;
 import io.vertx.core.json.JsonObject;

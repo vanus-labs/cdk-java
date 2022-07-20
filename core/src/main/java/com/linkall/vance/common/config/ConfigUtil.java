@@ -14,11 +14,10 @@
  * limitations under the License.
  *
  */
-package com.linkall.vance.common.env;
+package com.linkall.vance.common.config;
 
 import com.linkall.vance.common.constant.ConfigConstant;
 import com.linkall.vance.common.constant.DefaultValues;
-import com.linkall.vance.common.store.KVStoreFactory;
 import io.vertx.core.json.JsonArray;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
