@@ -30,7 +30,7 @@ public class ConfigLoader {
     public static JsonObject userConfig = null;
     public static JsonObject userSecret = null;
     static{
-        String configPath = EnvUtil.getConfigPath();
+        String configPath = ConfigUtil.getConfigPath();
         try {
             userConfig =  new JsonObject(GenericFileUtil.readFile(configPath));
         } catch (IOException e) {
