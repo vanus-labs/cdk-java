@@ -14,6 +14,7 @@ permalink: /
 The cdk aims to speed up the development of a vance connector by offering some utilities including:
 - HTTP implementations (either to handle general HTTP requests or CloudEvents)
 - Config implementation to load user-specific configs
+- Secret implementation to load user's secrets for authentication or encryption  
 - The ability to interact with the Vance operator
 
 ## Getting started
@@ -26,7 +27,7 @@ To use the cdk-java, add following dependency to your pom.xml
 <dependency>
     <groupId>com.linkall</groupId>
     <artifactId>cdk-java</artifactId>
-    <version>0.1.0</version>
+    <version>0.2.1</version>
 </dependency>
 ```
 
