@@ -56,7 +56,7 @@ public class KVStoreFactory {
     public static void main(String[] args) {
         KVStore kv = KVStoreFactory.createKVStore();
         //kv.put("aaa","bbb");
-        System.out.println(kv.get("abc"));
+        //System.out.println(kv.get("abc"));
         kv.put("abc","ccc");
         System.out.println(kv.get("abc"));
         kv.put("abc","ddd");
