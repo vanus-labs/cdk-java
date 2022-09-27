@@ -43,6 +43,14 @@ public class ConfigUtil {
         return ret;
     }
 
+    public static int getInt(String key){
+        int ret = -1;
+        if(null != ConfigLoader.getUserConfig()){
+            ret = ConfigLoader.getUserConfig().getInteger(key);
+        }
+        return ret;
+    }
+
     public static List<String> getStringArray(String key){
         String ret = System.getenv(key.toUpperCase());
         if(null != ret){
