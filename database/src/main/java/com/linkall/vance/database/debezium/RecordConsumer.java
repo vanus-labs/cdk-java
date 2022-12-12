@@ -1,81 +1,65 @@
-package com.linkall.cdk.database.debezium;
+package com.linkall.vance.database.debezium;
 
-import com.linkall.vance.config.ConfigUtil;
+import com.linkall.vance.core.Tuple;
+import com.linkall.vance.util.EventUtil;
 import io.cloudevents.CloudEvent;
-import io.cloudevents.http.vertx.VertxMessageFactory;
-import io.cloudevents.jackson.JsonFormat;
 import io.debezium.engine.ChangeEvent;
 import io.debezium.engine.DebeziumEngine;
-import io.vertx.core.Future;
-import io.vertx.core.Vertx;
-import io.vertx.core.buffer.Buffer;
-import io.vertx.ext.web.client.HttpResponse;
-import io.vertx.ext.web.client.WebClient;
+import org.apache.kafka.connect.source.SourceRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 
-import static java.net.HttpURLConnection.*;
-
 public class RecordConsumer
-        implements DebeziumEngine.ChangeConsumer<ChangeEvent<String, String>> {
+        implements DebeziumEngine.ChangeConsumer<ChangeEvent<SourceRecord, SourceRecord>> {
     private static final Logger LOGGER = LoggerFactory.getLogger(RecordConsumer.class);
-    private final Adapter2<String, String> adapter;
-    private final WebClient webClient;
+    private final BlockingQueue<Tuple> events;
+    private final Adapter adapter;
 
-    public RecordConsumer(Adapter2<String, String> adapter) {
+
+    public RecordConsumer(BlockingQueue<Tuple> events, Adapter adapter) {
         this.adapter = adapter;
-        webClient = WebClient.create(Vertx.vertx());
+        this.events = events;
     }
 
     @Override
-    public void handleBatch(List<ChangeEvent<String, String>> records, DebeziumEngine.RecordCommitter<ChangeEvent<String, String>> committer) {
+    public void handleBatch(List<ChangeEvent<SourceRecord, SourceRecord>> records,
+                            DebeziumEngine.RecordCommitter<ChangeEvent<SourceRecord, SourceRecord>> committer)
+            throws InterruptedException {
         CountDownLatch latch = new CountDownLatch(records.size());
-        // Stopping connector after error in the application's handler method: Attribute 'id' cannot be null
-        try {
-            for (ChangeEvent<String, String> record : records) {
-                LOGGER.debug("Received event '{}'", record);
-                if (record.value() == null) {
-                    latch.countDown();
-                    continue;
-                }
-                // TODO add to dead letter & exception
-                CloudEvent ceEvent = this.adapter.adapt(record.key(), record.value());
-                Future<HttpResponse<Buffer>> responseFuture =
-                        VertxMessageFactory.createWriter(webClient.postAbs(ConfigUtil.getVanceSink()))
-                                .writeStructured(ceEvent, JsonFormat.CONTENT_TYPE);
-                responseFuture.onComplete(
-                        ar -> {
-                            if (ar.failed()) {
-                                LOGGER.warn("Error to send record: {},error: {}", record, ar.cause());
-                            } else if (ar.result().statusCode() == HTTP_OK
-                                    || ar.result().statusCode() == HTTP_NO_CONTENT
-                                    || ar.result().statusCode() == HTTP_ACCEPTED) {
-                                LOGGER.debug("Success to send cloudEvent：{}", ceEvent.getId());
-                            } else {
-                                LOGGER.warn(
-                                        "Failed to send record: {},statusCode: {}, body: {}",
-                                        record,
-                                        ar.result().statusCode(),
-                                        ar.result().bodyAsString());
-                            }
-                            try {
-                                committer.markProcessed(record);
-                            } catch (InterruptedException e) {
-                                LOGGER.warn(
-                                        "Failed to mark processed record: {},error: {}",
-                                        record.value(),
-                                        e);
-                            }
-                            latch.countDown();
-                        });
+        for (ChangeEvent<SourceRecord, SourceRecord> record : records) {
+            LOGGER.debug("Received event '{}'", record);
+            if (record.value()==null) {
+                latch.countDown();
+                continue;
             }
-            latch.await();
-            committer.markBatchFinished();
-        } catch (Exception e) {
-            // TODO error handle
+            CloudEvent ceEvent = this.adapter.adapt(record.value());
+            events.put(new Tuple(ceEvent, () -> {
+                commit(latch, record, committer);
+            }, () -> {
+                LOGGER.error("event send failed:{}", EventUtil.eventToJson(ceEvent));
+                commit(latch, record, committer);
+            }));
         }
+        latch.await();
+        committer.markBatchFinished();
+    }
+
+    private void commit(
+            CountDownLatch latch,
+            ChangeEvent<SourceRecord, SourceRecord> record,
+            DebeziumEngine.RecordCommitter<ChangeEvent<SourceRecord, SourceRecord>> committer) {
+        try {
+            committer.markProcessed(record);
+        } catch (InterruptedException e) {
+            LOGGER.warn(
+                    "Failed to mark processed record: {},error: {}",
+                    record.value().sourceOffset(),
+                    e);
+        }
+        latch.countDown();
     }
 }

@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class SinkConfig extends Config {
 
-    @JsonProperty("v_port")
+    @JsonProperty("port")
     private Integer port;
 
     public Integer getPort() {
@@ -19,7 +19,7 @@ public class SinkConfig extends Config {
             } catch (Exception e) {
             }
         }
-        return 8080;
+        return Constants.DEFAULT_PORT;
     }
 
     public void setPort(Integer port) {

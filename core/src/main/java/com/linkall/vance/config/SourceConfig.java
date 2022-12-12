@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 public abstract class SourceConfig extends Config {
 
-    @JsonProperty("v_target")
+    @JsonProperty("target")
     private String target;
 
     @JsonProperty("send_event_attempts")

@@ -1,6 +1,6 @@
 package com.linkall.vance.core.runtime;
 
-public interface Worker {
+public interface ConnectorWorker {
     void start();
     void stop();
 }

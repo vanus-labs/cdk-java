@@ -20,7 +20,7 @@ import com.linkall.vance.config.Config;
 import com.linkall.vance.config.ConfigUtil;
 import com.linkall.vance.config.SinkConfig;
 import com.linkall.vance.config.SourceConfig;
-import com.linkall.vance.core.runtime.Worker;
+import com.linkall.vance.core.runtime.ConnectorWorker;
 import com.linkall.vance.core.runtime.http.SinkWorker;
 import com.linkall.vance.core.runtime.http.SourceWorker;
 import org.slf4j.Logger;
@@ -53,7 +53,7 @@ public class VanceApplication {
             return;
         }
 
-        Worker worker;
+        ConnectorWorker worker;
         if (isSink(clazz)) {
             worker = new SinkWorker((Sink) connector, (SinkConfig) config);
         } else if (isSource(clazz)) {

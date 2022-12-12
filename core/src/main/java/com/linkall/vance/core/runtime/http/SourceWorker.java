@@ -3,7 +3,7 @@ package com.linkall.vance.core.runtime.http;
 import com.linkall.vance.config.SourceConfig;
 import com.linkall.vance.core.Source;
 import com.linkall.vance.core.Tuple;
-import com.linkall.vance.core.runtime.Worker;
+import com.linkall.vance.core.runtime.ConnectorWorker;
 import com.linkall.vance.util.EventUtil;
 import io.cloudevents.http.vertx.VertxMessageFactory;
 import io.cloudevents.jackson.JsonFormat;
@@ -20,7 +20,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-public class SourceWorker implements Worker {
+public class SourceWorker implements ConnectorWorker {
     private static final Logger LOGGER = LoggerFactory.getLogger(SourceWorker.class);
     private WebClient webClient;
     private CircuitBreaker breaker;

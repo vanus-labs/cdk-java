@@ -12,13 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package com.linkall.cdk.database.debezium;
+package com.linkall.vance.database.debezium;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Preconditions;
-import com.linkall.vance.common.store.KVStoreFactory;
-import com.linkall.vance.core.KVStore;
+import com.linkall.vance.store.KVStore;
+import com.linkall.vance.store.KVStoreFactory;
 import io.debezium.embedded.EmbeddedEngine;
 import org.apache.kafka.connect.json.JsonConverter;
 import org.apache.kafka.connect.runtime.WorkerConfig;
@@ -27,6 +26,7 @@ import org.apache.kafka.connect.storage.MemoryOffsetBackingStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
@@ -35,18 +35,22 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-public class OffsetStore extends MemoryOffsetBackingStore {
+public class KvStoreOffsetBackingStore extends MemoryOffsetBackingStore {
     public static final String OFFSET_STORAGE_KV_STORE_KEY_CONFIG = "offset.storage.kv.key";
     public static final String OFFSET_CONFIG_VALUE = "offset.config.value";
     private static final String DEFAULT_KEY_NAME = "vance_debezium_offset";
 
-    private static final Logger logger = LoggerFactory.getLogger(OffsetStore.class);
+    private static final Logger logger = LoggerFactory.getLogger(KvStoreOffsetBackingStore.class);
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final KVStore store;
     private String keyName;
 
-    public OffsetStore() {
-        store = KVStoreFactory.createKVStore();
+    public KvStoreOffsetBackingStore() {
+        try {
+            store = KVStoreFactory.createKVStore();
+        } catch (Exception e) {
+            throw new RuntimeException("create kv store error", e);
+        }
     }
 
     private static String byteBufferToString(final ByteBuffer byteBuffer) {
@@ -67,7 +71,7 @@ public class OffsetStore extends MemoryOffsetBackingStore {
                 Optional.ofNullable(map.get(OFFSET_STORAGE_KV_STORE_KEY_CONFIG)).orElse(DEFAULT_KEY_NAME);
         // read from config
         String offsetConfigValue = map.get(OFFSET_CONFIG_VALUE);
-        if (offsetConfigValue == null || offsetConfigValue.isEmpty()) {
+        if (offsetConfigValue==null || offsetConfigValue.isEmpty()) {
             return;
         }
         String engineName = map.get(EmbeddedEngine.ENGINE_NAME.name());
@@ -96,8 +100,8 @@ public class OffsetStore extends MemoryOffsetBackingStore {
 
     @SuppressWarnings("unchecked")
     private void load() {
-        String value = store.get(keyName);
-        if (value == null || value.length() == 0) {
+        byte[] value = store.get(keyName);
+        if (value==null) {
             return;
         }
         loadFromKvStore(value);
@@ -111,19 +115,19 @@ public class OffsetStore extends MemoryOffsetBackingStore {
                                 Collectors.toMap(
                                         e -> byteBufferToString(e.getKey()), e -> byteBufferToString(e.getValue())));
         try {
-            String value = objectMapper.writeValueAsString(raw);
+            byte[] value = objectMapper.writeValueAsBytes(raw);
             store.put(keyName, value);
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
+        } catch (Exception e) {
+            throw new RuntimeException("store offset error",e);
         }
     }
 
-    private void loadFromKvStore(String value) {
-        logger.info("Load offset: {}", value);
+    private void loadFromKvStore(byte[] value) {
+        logger.info("Load offset: {}", new String(value));
         Map<String, String> mapAsString = null;
         try {
             mapAsString = objectMapper.readValue(value, Map.class);
-        } catch (JsonProcessingException e) {
+        } catch (IOException e) {
             throw new RuntimeException(e);
         }
         data =

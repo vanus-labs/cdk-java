@@ -3,7 +3,7 @@ package com.linkall.vance.core.runtime.http;
 import com.linkall.vance.config.SinkConfig;
 import com.linkall.vance.core.Result;
 import com.linkall.vance.core.Sink;
-import com.linkall.vance.core.runtime.Worker;
+import com.linkall.vance.core.runtime.ConnectorWorker;
 import io.cloudevents.CloudEvent;
 import io.cloudevents.core.message.MessageReader;
 import io.cloudevents.http.vertx.VertxMessageFactory;
@@ -14,7 +14,7 @@ import io.vertx.core.http.HttpServerResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class SinkWorker implements Worker {
+public class SinkWorker implements ConnectorWorker {
     private static final Logger LOGGER = LoggerFactory.getLogger(SinkWorker.class);
 
     private Sink sink;
