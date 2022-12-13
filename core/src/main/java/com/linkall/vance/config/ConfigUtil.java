@@ -37,7 +37,7 @@ public class ConfigUtil {
         }
         Config cfg = parseConfig(c);
         if (cfg.secretClass()!=null) {
-            Object secret = null;
+            Object secret;
             try {
                 secret = parseSecret(cfg.secretClass());
             } catch (FileNotFoundException e) {
@@ -45,9 +45,10 @@ public class ConfigUtil {
                 return cfg;
             }
             for (Method method : c.getMethods()) {
-                Class[] clazz = method.getParameterTypes();
-                if (clazz!=null && clazz.length==1 && clazz[0].equals(cfg.secretClass())) {
+                Class<?>[] clazz = method.getParameterTypes();
+                if (clazz.length==1 && clazz[0].equals(cfg.secretClass())) {
                     method.invoke(cfg, secret);
+                    return cfg;
                 }
             }
             LOGGER.warn("config no exist secret type {} property", cfg.secretClass());
@@ -61,10 +62,10 @@ public class ConfigUtil {
         if (configFile==null || configFile.isEmpty()) {
             configFile = "config.yaml";
         }
-        return (Config) parse(c, configFile);
+        return parse(c, configFile);
     }
 
-    private static Object parseSecret(Class c) throws Exception {
+    private static <T> T parseSecret(Class<T> c) throws Exception {
         String secretFile = System.getenv(Constants.ENV_SECRET_FILE);
         if (secretFile==null || secretFile.isEmpty()) {
             secretFile = "secret.yaml";
@@ -72,7 +73,7 @@ public class ConfigUtil {
         return parse(c, secretFile);
     }
 
-    private static Object parse(Class c, String filePathName) throws Exception {
+    private static <T> T parse(Class<T> c, String filePathName) throws Exception {
         ObjectMapper objectMapper;
         if (filePathName.endsWith("json")) {
             objectMapper = new ObjectMapper();

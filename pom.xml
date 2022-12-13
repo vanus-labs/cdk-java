@@ -192,31 +192,6 @@
             </plugins>
         </pluginManagement>
         <plugins>
-            <!-- Javadoc jar -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-javadoc-plugin</artifactId>
-                <version>3.2.0</version>
-                <configuration>
-                    <doclint>none</doclint>
-                    <detectLinks/>
-                    <links>
-                        <link>https://docs.spring.io/spring-framework/docs/current/javadoc-api/</link>
-                        <link>https://jakarta.ee/specifications/platform/8/apidocs/</link>
-                        <link>https://kafka.apache.org/25/javadoc/</link>
-                        <link>https://qpid.apache.org/releases/qpid-proton-j-0.33.7/api/</link>
-                        <link>https://fasterxml.github.io/jackson-databind/javadoc/2.10/</link>
-                    </links>
-                </configuration>
-                <executions>
-                    <execution>
-                        <id>attach-javadocs</id>
-                        <goals>
-                            <goal>jar</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
             <!-- Sources jar -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

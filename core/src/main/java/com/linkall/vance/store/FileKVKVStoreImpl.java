@@ -11,13 +11,14 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class FileKVKVStoreImpl extends MemoryKVStoreImpl {
-    private File file;
+    private final File file;
 
     public FileKVKVStoreImpl(String filepath) throws Exception {
         this.file = new File(filepath);
         load();
     }
 
+    @SuppressWarnings("unchecked")
     public void load() throws Exception {
         try (ObjectInputStream inputStream = new ObjectInputStream(Files.newInputStream(file.toPath()))) {
             Object obj = inputStream.readObject();

@@ -16,6 +16,7 @@
     <properties>
         <!-- No need to generate javadocs for examples -->
         <maven.javadoc.skip>true</maven.javadoc.skip>
+        <log4j2.version>2.17.1</log4j2.version>
     </properties>
 
     <modules>

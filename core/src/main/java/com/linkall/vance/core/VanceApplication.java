@@ -27,8 +27,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class VanceApplication {
-    private static final String SRC_INTERFACE_NAME = "interface com.linkall.vance.core.Source";
-    private static final String SINK_INTERFACE_NAME = "interface com.linkall.vance.core.Sink";
     private static final Logger LOGGER = LoggerFactory.getLogger(VanceApplication.class);
 
     public static void run(Class<? extends Connector> clazz) {
@@ -70,19 +68,17 @@ public class VanceApplication {
         LOGGER.info("connector {} started", connector.name());
     }
 
-    private static boolean isAssignableFrom(Class c, Class cls) {
-        Class[] clazzArr = c.getInterfaces();
-        if (clazzArr!=null) {
-            for (Class clazz : clazzArr) {
-                if (clazz.isAssignableFrom(cls)) {
-                    return true;
-                }
+    private static boolean isAssignableFrom(Class<?> c, Class<?> cls) {
+        Class<?>[] clazzArr = c.getInterfaces();
+        for (Class<?> clazz : clazzArr) {
+            if (clazz.isAssignableFrom(cls)) {
+                return true;
             }
         }
         return false;
     }
 
-    private static boolean isSink(Class c) {
+    private static boolean isSink(Class<?> c) {
         while (c!=null && c!=Object.class) {
             if (isAssignableFrom(c, Sink.class)) {
                 return true;
@@ -92,7 +88,7 @@ public class VanceApplication {
         return false;
     }
 
-    private static boolean isSource(Class c) {
+    private static boolean isSource(Class<?> c) {
         while (c!=null && c!=Object.class) {
             if (isAssignableFrom(c, Source.class)) {
                 return true;

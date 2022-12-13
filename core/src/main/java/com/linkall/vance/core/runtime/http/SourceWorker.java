@@ -15,6 +15,8 @@ import io.vertx.ext.web.client.WebClientOptions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -22,12 +24,12 @@ import java.util.concurrent.TimeUnit;
 
 public class SourceWorker implements ConnectorWorker {
     private static final Logger LOGGER = LoggerFactory.getLogger(SourceWorker.class);
-    private WebClient webClient;
-    private CircuitBreaker breaker;
+    private final WebClient webClient;
+    private final CircuitBreaker breaker;
 
-    private Source source;
-    private SourceConfig config;
-    private ExecutorService executorService;
+    private final Source source;
+    private final SourceConfig config;
+    private final ExecutorService executorService;
     private volatile boolean isRunning = true;
     private BlockingQueue<Tuple> queue;
 
@@ -46,7 +48,12 @@ public class SourceWorker implements ConnectorWorker {
     @Override
     public void start() {
         LOGGER.info("source worker starting");
-
+        LOGGER.info("event target is {}", config.getTarget());
+        try {
+            new URL(config.getTarget());
+        } catch (MalformedURLException e) {
+            throw new RuntimeException(String.format("target is invalid %s", config.getTarget()), e);
+        }
         queue = source.queue();
         executorService.execute(this::runLoop);
         LOGGER.info("source worker started");
@@ -73,21 +80,21 @@ public class SourceWorker implements ConnectorWorker {
                     continue;
                 }
                 LOGGER.info("new event:{}", tuple.getEvent().getId());
-                breaker.execute(promise -> {
-                    VertxMessageFactory.createWriter(webClient.postAbs(config.getTarget()))
-                            .writeStructured(tuple.getEvent(), JsonFormat.CONTENT_TYPE)
-                            .onSuccess(r -> {
-                                promise.complete();
-                            }).onFailure(r -> {
-                                LOGGER.info("send event error {}", tuple.getEvent().getId(), r.getCause());
-                            });
-                }).onSuccess(r -> {
+                breaker.execute(promise ->
+                        VertxMessageFactory.createWriter(webClient.postAbs(config.getTarget()))
+                                .writeStructured(tuple.getEvent(), JsonFormat.CONTENT_TYPE)
+                                .onSuccess(r ->
+                                        promise.complete()
+                                ).onFailure(r ->
+                                        LOGGER.info("send event error {}", tuple.getEvent().getId(), r.getCause())
+                                )
+                ).onSuccess(r -> {
                     LOGGER.debug("send event success {}", EventUtil.eventToJson(tuple.getEvent()));
                     if (tuple.getSuccess()!=null) {
                         tuple.getSuccess().call();
                     }
                 }).onFailure(r -> {
-                    LOGGER.warn("send event failed {}", EventUtil.eventToJson(tuple.getEvent()));
+                    LOGGER.warn("send event failed {}", EventUtil.eventToJson(tuple.getEvent()), r.getCause());
                     if (tuple.getFailed()!=null) {
                         tuple.getFailed().call();
                     }

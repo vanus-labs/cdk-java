@@ -7,7 +7,7 @@ public abstract class Config {
     @JsonProperty("store_config")
     private StoreConfig storeConfig;
 
-    public Class secretClass() {
+    public Class<?> secretClass() {
         return null;
     }
 

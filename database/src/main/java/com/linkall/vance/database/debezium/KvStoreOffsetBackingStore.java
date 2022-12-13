@@ -98,7 +98,6 @@ public class KvStoreOffsetBackingStore extends MemoryOffsetBackingStore {
         logger.info("Stopped KvStoreOffsetBackingStore");
     }
 
-    @SuppressWarnings("unchecked")
     private void load() {
         byte[] value = store.get(keyName);
         if (value==null) {
@@ -118,13 +117,13 @@ public class KvStoreOffsetBackingStore extends MemoryOffsetBackingStore {
             byte[] value = objectMapper.writeValueAsBytes(raw);
             store.put(keyName, value);
         } catch (Exception e) {
-            throw new RuntimeException("store offset error",e);
+            throw new RuntimeException("store offset error", e);
         }
     }
 
     private void loadFromKvStore(byte[] value) {
         logger.info("Load offset: {}", new String(value));
-        Map<String, String> mapAsString = null;
+        Map<String, String> mapAsString;
         try {
             mapAsString = objectMapper.readValue(value, Map.class);
         } catch (IOException e) {

@@ -8,7 +8,6 @@ import com.linkall.vance.core.Tuple;
 import com.linkall.vance.util.EventUtil;
 import io.cloudevents.CloudEvent;
 import io.cloudevents.core.builder.CloudEventBuilder;
-import io.cloudevents.jackson.JsonFormat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -22,11 +21,11 @@ import java.util.concurrent.*;
 public class MySource implements Source {
     private static final Logger LOGGER = LoggerFactory.getLogger(MySource.class);
     private static final CloudEventBuilder template = CloudEventBuilder.v1();
-    private ObjectMapper objectMapper;
+    private final ObjectMapper objectMapper;
 
-    private BlockingQueue<Tuple> queue;
+    private final BlockingQueue<Tuple> queue;
     private ExampleConfig config;
-    private ScheduledExecutorService executor;
+    private final ScheduledExecutorService executor;
     private int num;
 
     public MySource() {
@@ -42,7 +41,7 @@ public class MySource implements Source {
         template.withType("testType");
         template.withDataContentType("application/json");
         template.withTime(OffsetDateTime.now());
-        Map data = new HashMap();
+        Map<String, Object> data = new HashMap<>();
         data.put("number", i);
         data.put("string", "Event Num " + i);
         template.withData("application/json", objectMapper.writeValueAsBytes(data));
@@ -50,15 +49,12 @@ public class MySource implements Source {
     }
 
     public void start() {
-        JsonFormat jsonFormat = new JsonFormat();
         executor.scheduleAtFixedRate(() -> {
             try {
                 CloudEvent event = makeEvent(num++);
-                queue.put(new Tuple(event, () -> {
-                    LOGGER.info("send event success {}", EventUtil.eventToJson(event));
-                }, () -> {
-                    LOGGER.info("send event failed {}", EventUtil.eventToJson(event));
-                }));
+                queue.put(new Tuple(event, () ->
+                        LOGGER.info("send event success {}", EventUtil.eventToJson(event))
+                        , () -> LOGGER.info("send event failed {}", EventUtil.eventToJson(event))));
             } catch (Exception e) {
                 LOGGER.error("error", e);
             }

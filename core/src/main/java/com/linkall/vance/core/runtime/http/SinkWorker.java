@@ -17,8 +17,8 @@ import org.slf4j.LoggerFactory;
 public class SinkWorker implements ConnectorWorker {
     private static final Logger LOGGER = LoggerFactory.getLogger(SinkWorker.class);
 
-    private Sink sink;
-    private SinkConfig config;
+    private final Sink sink;
+    private final SinkConfig config;
 
     public SinkWorker(Sink sink, SinkConfig config) {
         this.sink = sink;
