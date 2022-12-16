@@ -5,16 +5,16 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>com.linkall.vance</groupId>
-        <artifactId>vance-parent</artifactId>
+        <groupId>com.linkall.cdk</groupId>
+        <artifactId>cdk-parent</artifactId>
         <version>0.4.0-SNAPSHOT</version>
     </parent>
 
-    <artifactId>vance-core</artifactId>
+    <artifactId>cdk-core</artifactId>
     <packaging>jar</packaging>
 
     <properties>
-        <module-name>con.linkall.vance.core</module-name>
+        <module-name>con.linkall.cdk.core</module-name>
         <log4j2.version>2.17.1</log4j2.version>
         <cloudevents.version>2.4.0</cloudevents.version>
         <vertx.version>4.2.5</vertx.version>

@@ -5,23 +5,23 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>com.linkall.vance</groupId>
-        <artifactId>vance-parent</artifactId>
+        <groupId>com.linkall.cdk</groupId>
+        <artifactId>cdk-parent</artifactId>
         <version>0.4.0-SNAPSHOT</version>
     </parent>
 
-    <artifactId>vance-database</artifactId>
+    <artifactId>cdk-database</artifactId>
     <packaging>jar</packaging>
 
     <properties>
-        <module-name>con.linkall.vance.database</module-name>
+        <module-name>con.linkall.cdk.database</module-name>
         <debezium.version>1.9.4.Final</debezium.version>
     </properties>
 
     <dependencies>
         <dependency>
             <groupId>${project.groupId}</groupId>
-            <artifactId>vance-core</artifactId>
+            <artifactId>cdk-core</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
