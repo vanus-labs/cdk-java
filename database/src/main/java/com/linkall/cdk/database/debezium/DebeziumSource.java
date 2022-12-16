@@ -14,120 +14,167 @@
 
 package com.linkall.cdk.database.debezium;
 
-import com.linkall.vance.core.Adapter2;
+import com.linkall.cdk.config.Config;
+import com.linkall.cdk.connector.Source;
+import com.linkall.cdk.connector.Tuple;
+import io.debezium.embedded.Connect;
 import io.debezium.engine.ChangeEvent;
 import io.debezium.engine.DebeziumEngine;
-import io.debezium.engine.format.Json;
 import io.debezium.engine.spi.OffsetCommitPolicy;
+import io.vertx.core.json.JsonObject;
 import org.apache.kafka.connect.json.JsonConverter;
 import org.apache.kafka.connect.json.JsonConverterConfig;
+import org.apache.kafka.connect.source.SourceRecord;
 import org.apache.kafka.connect.storage.Converter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Properties;
-import java.util.concurrent.Executor;
+import java.util.*;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
-public abstract class DebeziumSource implements com.linkall.vance.core.Source {
-    private static final Logger LOGGER = LoggerFactory.getLogger(DebeziumSource.class);
-    private final DebeziumEngine.ChangeConsumer<ChangeEvent<String, String>> consumer;
-    private DebeziumEngine<ChangeEvent<String, String>> engine;
-    private Executor executor;
+public abstract class DebeziumSource implements Source {
+    protected static final Logger LOGGER = LoggerFactory.getLogger(DebeziumSource.class);
+    private DebeziumEngine.ChangeConsumer<ChangeEvent<SourceRecord, SourceRecord>> consumer;
+    private DebeziumEngine<ChangeEvent<SourceRecord, SourceRecord>> engine;
+    private ExecutorService executor;
+    protected DbConfig dbConfig;
+    protected BlockingQueue<Tuple> events;
 
     public DebeziumSource() {
-        consumer = new RecordConsumer((Adapter2<String, String>) getAdapter());
+        events = new ArrayBlockingQueue<>(100);
     }
+
+    public abstract Adapter getAdapter();
+
+    public abstract DbConfig getDbConfig();
 
     public abstract String getConnectorClass();
 
-    public abstract String getDatabase();
-
-    public abstract String getStoreOffsetKey();
-
     public abstract Map<String, Object> getConfigOffset();
 
-    public abstract Properties getDebeziumProperties() throws IOException;
+    public abstract Properties getDebeziumProperties();
 
-    public void start() throws IOException {
+    public abstract Set<String> getSystemExcludedTables();
+
+    public String getOffsetKey() {
+        return null;
+    }
+
+    public void start() {
+        dbConfig = getDbConfig();
+        consumer = new RecordConsumer(events, getAdapter());
         engine =
-                DebeziumEngine.create(Json.class)
+                DebeziumEngine.create(Connect.class)
                         .using(getProperties())
                         .using(OffsetCommitPolicy.always())
                         .notifying(consumer)
-                        .using(
-                                (success, message, error) -> {
-                                    LOGGER.info(
-                                            "Debezium engine shutdown,success: {}, message: {},error:{}",
-                                            success,
-                                            message,
-                                            error);
-                                })
+                        .using((success, message, error) ->
+                                LOGGER.info("Debezium engine shutdown,success: {}, message: {}", success, message, error))
                         .build();
         executor = Executors.newSingleThreadExecutor();
         executor.execute(engine);
-        Runtime.getRuntime()
-                .addShutdownHook(
-                        new Thread(
-                                () -> {
-                                    try {
-                                        engine.close();
-                                    } catch (IOException e) {
-                                        LOGGER.error("engine close error", e);
-                                    }
-                                }));
     }
 
-    private Properties getProperties() throws IOException {
+    private Properties getProperties() {
         final Properties props = new Properties();
 
+//        props.setProperty("test.disable.global.locking","true");
         // debezium engine configuration
         props.setProperty("connector.class", getConnectorClass());
-
-        // https://debezium.io/documentation/reference/1.9/connectors/mysql.html#mysql-property-binary-handling-mode
-        props.setProperty("binary.handling.mode", "base64");
-
         // snapshot config
         props.setProperty("snapshot.mode", "initial");
         // DO NOT include schema change, e.g. DDL
         props.setProperty("include.schema.changes", "false");
         // disable tombstones
         props.setProperty("tombstones.on.delete", "false");
-        props.setProperty("converter.schemas.enable", "false"); // don't include schema in message
-
-        // https://debezium.io/documentation/reference/stable/integrations/cloudevents.html
-        props.setProperty("converter", "io.debezium.converters.CloudEventsConverter");
-        props.setProperty("converter.serializer.type", "json");
-        props.setProperty("converter.data.serializer.type", "json");
-
-        // history
-        props.setProperty("database.history", "io.debezium.relational.history.FileDatabaseHistory");
-        props.setProperty("database.history.file.filename", "/tmp/mongodb/history.data");
 
         // offset
-        props.setProperty("offset.flush.interval.ms", "1000");
-        props.setProperty("offset.storage", OffsetStore.class.getCanonicalName());
-        if (this.getStoreOffsetKey() != null && !this.getStoreOffsetKey().isEmpty()) {
+        props.setProperty("offset.storage", KvStoreOffsetBackingStore.class.getCanonicalName());
+        if (getOffsetKey()!=null) {
             props.setProperty(
-                    OffsetStore.OFFSET_STORAGE_KV_STORE_KEY_CONFIG, this.getStoreOffsetKey());
+                    KvStoreOffsetBackingStore.OFFSET_STORAGE_KV_STORE_KEY_CONFIG, getOffsetKey());
         }
         Map<String, Object> configOffset = getConfigOffset();
-        if (configOffset != null && configOffset.size() > 0) {
+        if (configOffset!=null && configOffset.size() > 0) {
             Converter valueConverter = new JsonConverter();
             Map<String, Object> valueConfigs = new HashMap<>();
             valueConfigs.put(JsonConverterConfig.SCHEMAS_ENABLE_CONFIG, false);
             valueConverter.configure(valueConfigs, false);
-            byte[] offsetValue = valueConverter.fromConnectData(this.getDatabase(), null, configOffset);
+            byte[] offsetValue = valueConverter.fromConnectData(dbConfig.getDatabase(), null, configOffset);
             props.setProperty(
-                    OffsetStore.OFFSET_CONFIG_VALUE,
+                    KvStoreOffsetBackingStore.OFFSET_CONFIG_VALUE,
                     new String(offsetValue, StandardCharsets.UTF_8));
         }
 
+        props.setProperty("offset.flush.interval.ms", "1000");
+
+        // https://debezium.io/documentation/reference/configuration/avro.html
+        props.setProperty("key.converter.schemas.enable", "false");
+        props.setProperty("value.converter.schemas.enable", "false");
+
+        // debezium names
+        props.setProperty("name", dbConfig.getDatabase());
+        props.setProperty("database.server.name", dbConfig.getDatabase());
+
+        // db connection configuration
+        props.setProperty("database.hostname", dbConfig.getHost());
+        props.setProperty("database.port", dbConfig.getPort());
+        props.setProperty("database.user", dbConfig.getUsername());
+        props.setProperty("database.dbname", dbConfig.getDatabase());
+        props.setProperty("database.password", dbConfig.getPassword());
+
         props.putAll(getDebeziumProperties());
         return props;
+    }
+
+    public Properties getDebeziumProperties(JsonObject debezium) {
+        final Properties debeziumProperties = new Properties();
+
+        debezium.stream().forEach(k -> {
+            debeziumProperties.put(k.getKey(), debezium.getString(k.getKey()));
+        });
+
+        return debeziumProperties;
+    }
+
+    public Set<String> getExcludedTables(Set<String> excludeTables) {
+        Set<String> exclude = new HashSet<>(getSystemExcludedTables());
+        exclude.addAll(excludeTables);
+        return exclude;
+    }
+
+    public String tableFormat(String name, Stream<String> table) {
+        return table
+                .map(stream -> name + "." + stream)
+                .collect(Collectors.joining(","));
+    }
+
+    @Override
+    public Class<? extends Config> configClass() {
+        return null;
+    }
+
+    @Override
+    public void initialize(Config config) throws Exception {
+        start();
+    }
+
+
+    @Override
+    public void destroy() throws Exception {
+        if (engine!=null)
+            engine.close();
+        executor.shutdown();
+    }
+
+    @Override
+    public BlockingQueue<Tuple> queue() {
+        return events;
     }
 }

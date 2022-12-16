@@ -19,14 +19,16 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <groupId>com.linkall</groupId>
-    <artifactId>vance-cdk</artifactId>
-    <version>1.0.0</version>
+
+    <groupId>com.linkall.cdk</groupId>
+    <artifactId>cdk-parent</artifactId>
+    <version>0.4.0-SNAPSHOT</version>
+    <packaging>pom</packaging>
+
     <modules>
         <module>core</module>
         <module>database</module>
     </modules>
-    <packaging>pom</packaging>
 
     <name>vance-cdk</name>
     <url>https://github.com/linkall-labs/cdk-java/</url>
@@ -55,9 +57,9 @@
     </developers>
 
     <properties>
-        <log4j2.version>2.17.1</log4j2.version>
-        <cloudevents.version>2.3.0</cloudevents.version>
-        <vertx.version>4.0.0</vertx.version>
+        <maven.compiler.source>8</maven.compiler.source>
+        <maven.compiler.target>8</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <!-- Maven plugins -->
         <maven-surefire-plugin.version>2.22.2</maven-surefire-plugin.version>
         <maven-editorconfig-plugin.version>0.1.0</maven-editorconfig-plugin.version>
@@ -190,31 +192,6 @@
             </plugins>
         </pluginManagement>
         <plugins>
-            <!-- Javadoc jar -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-javadoc-plugin</artifactId>
-                <version>3.2.0</version>
-                <configuration>
-                    <doclint>none</doclint>
-                    <detectLinks/>
-                    <links>
-                        <link>https://docs.spring.io/spring-framework/docs/current/javadoc-api/</link>
-                        <link>https://jakarta.ee/specifications/platform/8/apidocs/</link>
-                        <link>https://kafka.apache.org/25/javadoc/</link>
-                        <link>https://qpid.apache.org/releases/qpid-proton-j-0.33.7/api/</link>
-                        <link>https://fasterxml.github.io/jackson-databind/javadoc/2.10/</link>
-                    </links>
-                </configuration>
-                <executions>
-                    <execution>
-                        <id>attach-javadocs</id>
-                        <goals>
-                            <goal>jar</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
             <!-- Sources jar -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

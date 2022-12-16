@@ -1,4 +1,0 @@
-{
-  "file": "com.linkall.vance.common.store.FileKVStoreImpl",
-  "etcd": "com.linkall.vance.common.store.EtcdKVStoreImpl"
-}
