@@ -50,7 +50,7 @@ public abstract class DebeziumSource implements Source, DebeziumEngine.ChangeCon
         this.events = new LinkedBlockingQueue<>();
     }
 
-    protected void adapt(CloudEventBuilder builder, String key, Object value) {
+    protected void adapt(CloudEventBuilder builder, String key, Object value) throws IOException {
         switch (key) {
             case "id":
                 builder.withId(UUID.randomUUID().toString());
@@ -83,7 +83,7 @@ public abstract class DebeziumSource implements Source, DebeziumEngine.ChangeCon
         }
     }
 
-    abstract protected CloudEventData convertData(Object data);
+    abstract protected CloudEventData convertData(Object data) throws IOException;
 
     @Override
     final public void destroy() throws Exception {
@@ -113,7 +113,7 @@ public abstract class DebeziumSource implements Source, DebeziumEngine.ChangeCon
             throws InterruptedException {
         CountDownLatch latch = new CountDownLatch(records.size());
         for (ChangeEvent<String, String> record : records) {
-            LOGGER.debug("Received event '{}'", record);
+            LOGGER.info("Received event '{}'", record);
             if (record.value() == null) {
                 latch.countDown();
                 continue;
@@ -130,6 +130,7 @@ public abstract class DebeziumSource implements Source, DebeziumEngine.ChangeCon
                     )
                 );
             } catch (IOException e) {
+                latch.countDown(); // How to process offset?
                 LOGGER.error("failed to parse record data {} to json, error: {}", record.value(), e);
             }
         }
