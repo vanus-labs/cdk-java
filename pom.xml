@@ -1,20 +1,4 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!--
-  ~ Copyright 2022-present The Vance Authors
-  ~ <p>
-  ~ Licensed under the Apache License, Version 2.0 (the "License");
-  ~ you may not use this file except in compliance with the License.
-  ~ You may obtain a copy of the License at
-  ~ <p>
-  ~ http://www.apache.org/licenses/LICENSE-2.0
-  ~ <p>
-  ~ Unless required by applicable law or agreed to in writing, software
-  ~ distributed under the License is distributed on an "AS IS" BASIS,
-  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  ~ See the License for the specific language governing permissions and
-  ~ limitations under the License.
-  ~
-  -->
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
@@ -30,9 +14,9 @@
         <module>database</module>
     </modules>
 
-    <name>vance-cdk</name>
+    <name>vanus-cdk</name>
     <url>https://github.com/linkall-labs/cdk-java/</url>
-    <description>Vance CDK for Java</description>
+    <description>Vanus CDK for Java</description>
 
     <scm>
         <connection>scm:git:git://github.com:linkall-labs/cdk-java.git</connection>
@@ -44,15 +28,16 @@
     <licenses>
         <license>
             <name>The Apache Software License, Version 2.0</name>
-            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
             <distribution>repo</distribution>
         </license>
     </licenses>
 
     <developers>
         <developer>
-            <id>JieDing</id>
-            <name>Jie Ding</name>
+            <id>Connector Development Toolkit</id>
+            <name>Connector Development Toolkit Of Vanus</name>
+            <url>https://linkall.com/docs</url>
         </developer>
     </developers>
 
