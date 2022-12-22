@@ -7,27 +7,32 @@ import com.linkall.cdk.runtime.ConnectorWorker;
 import com.linkall.cdk.util.EventUtil;
 import com.linkall.cdk.util.Sleep;
 import io.cloudevents.CloudEvent;
-import io.cloudevents.http.vertx.VertxMessageFactory;
+import io.cloudevents.core.message.MessageWriter;
+import io.cloudevents.http.HttpMessageFactory;
 import io.cloudevents.jackson.JsonFormat;
-import io.vertx.core.Future;
-import io.vertx.core.Vertx;
-import io.vertx.core.buffer.Buffer;
-import io.vertx.ext.web.client.HttpResponse;
-import io.vertx.ext.web.client.WebClient;
-import io.vertx.ext.web.client.WebClientOptions;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.ByteArrayEntity;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.util.EntityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicReference;
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import static java.net.HttpURLConnection.*;
 
 public class SourceWorker implements ConnectorWorker {
     private static final Logger LOGGER = LoggerFactory.getLogger(SourceWorker.class);
-    private final WebClient webClient;
+    private CloseableHttpClient httpClient;
+    private URI target;
 
     private final Source source;
     private final SourceConfig config;
@@ -38,8 +43,7 @@ public class SourceWorker implements ConnectorWorker {
     public SourceWorker(Source source, SourceConfig config) {
         this.source = source;
         this.config = config;
-        Vertx vertx = Vertx.vertx();
-        webClient = WebClient.create(vertx, new WebClientOptions().setUserAgent("cdk-java-" + source.name()));
+        httpClient = HttpClients.createDefault();
         executorService = Executors.newSingleThreadExecutor();
     }
 
@@ -48,8 +52,8 @@ public class SourceWorker implements ConnectorWorker {
         LOGGER.info("source worker starting");
         LOGGER.info("event target is {}", config.getTarget());
         try {
-            new URL(config.getTarget());
-        } catch (MalformedURLException e) {
+            target = new URI(config.getTarget());
+        } catch (URISyntaxException e) {
             throw new RuntimeException(String.format("target is invalid %s", config.getTarget()), e);
         }
         queue = source.queue();
@@ -60,12 +64,22 @@ public class SourceWorker implements ConnectorWorker {
     @Override
     public void stop() {
         LOGGER.info("source worker stopping");
-        isRunning = false;
         executorService.shutdown();
         try {
             source.destroy();
         } catch (Exception e) {
-            LOGGER.error("source destroy error", e);
+            LOGGER.error("source destroy", e);
+        }
+        isRunning = false;
+        try {
+            executorService.awaitTermination(10, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            LOGGER.error("awaitTermination", e);
+        }
+        try {
+            httpClient.close();
+        } catch (IOException e) {
+            LOGGER.error("httpClient close", e);
         }
         LOGGER.info("source worker stopped");
     }
@@ -77,26 +91,34 @@ public class SourceWorker implements ConnectorWorker {
         return attempt < config.getSendEventAttempts();
     }
 
+    private MessageWriter createWriter(HttpPost httpPost) {
+        return HttpMessageFactory.createWriter(
+                httpPost::addHeader,
+                body -> {
+                    httpPost.setEntity(new ByteArrayEntity(body));
+                    try (CloseableHttpResponse httpResponse = httpClient.execute(httpPost)) {
+                        int code = httpResponse.getStatusLine().getStatusCode();
+                        if (code!=HTTP_OK && code!=HTTP_ACCEPTED && code!=HTTP_NO_CONTENT) {
+                            throw new RuntimeException(String.format("response failed: code %d, body:[%s]", code, EntityUtils.toString(httpResponse.getEntity())));
+                        }
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                });
+    }
+
     private void sendEvent(CloudEvent event) throws Throwable {
         int attempt = 0;
-        AtomicReference<Throwable> error = new AtomicReference<>();
+        Throwable t;
         for (; ; ) {
-            CountDownLatch latch = new CountDownLatch(1);
-            Future<HttpResponse<Buffer>> future = VertxMessageFactory.createWriter(webClient.postAbs(config.getTarget()))
-                    .writeStructured(event, JsonFormat.CONTENT_TYPE);
+            t = null;
+            HttpPost httpPost = new HttpPost(target);
+            try {
+                createWriter(httpPost).writeStructured(event, JsonFormat.CONTENT_TYPE);
+            } catch (Throwable error) {
+                t = error;
+            }
             attempt++;
-            future.onComplete(ar -> {
-                if (ar.failed()) {
-                    error.set(ar.cause());
-                } else if (ar.result().statusCode()!=HTTP_OK
-                        && ar.result().statusCode()!=HTTP_NO_CONTENT
-                        && ar.result().statusCode()!=HTTP_ACCEPTED) {
-                    error.set(new Exception(String.format("response failed: code %d, body [%s]", ar.result().statusCode(), ar.result().bodyAsString())));
-                }
-                latch.countDown();
-            });
-            latch.await(10, TimeUnit.SECONDS);
-            Throwable t = error.get();
             if (t==null) {
                 LOGGER.debug("send event success, attempt:{}, event:{}", attempt, EventUtil.eventToJson(event));
                 return;
