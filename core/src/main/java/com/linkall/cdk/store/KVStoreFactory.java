@@ -25,8 +25,10 @@ public class KVStoreFactory {
         switch (storeConfig.getType()) {
             case FILE:
                 kvStore = new FileKVKVStoreImpl(storeConfig.getStoreFile());
+                return;
             default:
                 kvStore = new MemoryKVStoreImpl();
+                return;
         }
     }
 }

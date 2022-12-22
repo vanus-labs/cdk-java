@@ -26,6 +26,7 @@ import com.linkall.cdk.connector.Source;
 import com.linkall.cdk.runtime.ConnectorWorker;
 import com.linkall.cdk.runtime.http.SinkWorker;
 import com.linkall.cdk.runtime.http.SourceWorker;
+import com.linkall.cdk.store.KVStoreFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,6 +44,7 @@ public class Application {
         Config config;
         try {
             config = ConfigUtil.parse(connector.configClass());
+            KVStoreFactory.setStoreConfig(config.getStoreConfig());
         } catch (Exception e) {
             LOGGER.error("parse config error", e);
             return;
