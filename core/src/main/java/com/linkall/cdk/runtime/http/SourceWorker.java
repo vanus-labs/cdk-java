@@ -5,27 +5,34 @@ import com.linkall.cdk.connector.Source;
 import com.linkall.cdk.connector.Tuple;
 import com.linkall.cdk.runtime.ConnectorWorker;
 import com.linkall.cdk.util.EventUtil;
-import io.cloudevents.http.vertx.VertxMessageFactory;
+import com.linkall.cdk.util.Sleep;
+import io.cloudevents.CloudEvent;
+import io.cloudevents.core.message.MessageWriter;
+import io.cloudevents.http.HttpMessageFactory;
 import io.cloudevents.jackson.JsonFormat;
-import io.vertx.circuitbreaker.CircuitBreaker;
-import io.vertx.circuitbreaker.CircuitBreakerOptions;
-import io.vertx.core.Vertx;
-import io.vertx.ext.web.client.WebClient;
-import io.vertx.ext.web.client.WebClientOptions;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.ByteArrayEntity;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.util.EntityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.net.MalformedURLException;
-import java.net.URL;
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
+import static java.net.HttpURLConnection.*;
+
 public class SourceWorker implements ConnectorWorker {
     private static final Logger LOGGER = LoggerFactory.getLogger(SourceWorker.class);
-    private final WebClient webClient;
-    private final CircuitBreaker breaker;
+    private CloseableHttpClient httpClient;
+    private URI target;
 
     private final Source source;
     private final SourceConfig config;
@@ -36,12 +43,7 @@ public class SourceWorker implements ConnectorWorker {
     public SourceWorker(Source source, SourceConfig config) {
         this.source = source;
         this.config = config;
-        Vertx vertx = Vertx.vertx();
-        breaker = CircuitBreaker.create("my-circuit-breaker", vertx,
-                new CircuitBreakerOptions()
-                        .setMaxRetries(config.getSendEventAttempts() - 1)
-                        .setTimeout(3000));
-        webClient = WebClient.create(vertx, new WebClientOptions().setUserAgent("cdk-java-" + source.name()));
+        httpClient = HttpClients.createDefault();
         executorService = Executors.newSingleThreadExecutor();
     }
 
@@ -50,8 +52,8 @@ public class SourceWorker implements ConnectorWorker {
         LOGGER.info("source worker starting");
         LOGGER.info("event target is {}", config.getTarget());
         try {
-            new URL(config.getTarget());
-        } catch (MalformedURLException e) {
+            target = new URI(config.getTarget());
+        } catch (URISyntaxException e) {
             throw new RuntimeException(String.format("target is invalid %s", config.getTarget()), e);
         }
         queue = source.queue();
@@ -62,14 +64,72 @@ public class SourceWorker implements ConnectorWorker {
     @Override
     public void stop() {
         LOGGER.info("source worker stopping");
-        isRunning = false;
         executorService.shutdown();
         try {
             source.destroy();
         } catch (Exception e) {
-            LOGGER.error("source destroy error", e);
+            LOGGER.error("source destroy", e);
+        }
+        isRunning = false;
+        try {
+            executorService.awaitTermination(10, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            LOGGER.error("awaitTermination", e);
+        }
+        try {
+            httpClient.close();
+        } catch (IOException e) {
+            LOGGER.error("httpClient close", e);
         }
         LOGGER.info("source worker stopped");
+    }
+
+    private boolean needAttempt(int attempt) {
+        if (config.getSendEventAttempts() <= 0) {
+            return true;
+        }
+        return attempt < config.getSendEventAttempts();
+    }
+
+    private MessageWriter createWriter(HttpPost httpPost) {
+        return HttpMessageFactory.createWriter(
+                httpPost::addHeader,
+                body -> {
+                    httpPost.setEntity(new ByteArrayEntity(body));
+                    try (CloseableHttpResponse httpResponse = httpClient.execute(httpPost)) {
+                        int code = httpResponse.getStatusLine().getStatusCode();
+                        if (code!=HTTP_OK && code!=HTTP_ACCEPTED && code!=HTTP_NO_CONTENT) {
+                            throw new RuntimeException(String.format("response failed: code %d, body:[%s]", code, EntityUtils.toString(httpResponse.getEntity())));
+                        }
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                });
+    }
+
+    private void sendEvent(CloudEvent event) throws Throwable {
+        int attempt = 0;
+        Throwable t;
+        for (; ; ) {
+            t = null;
+            HttpPost httpPost = new HttpPost(target);
+            try {
+                createWriter(httpPost).writeStructured(event, JsonFormat.CONTENT_TYPE);
+            } catch (Throwable error) {
+                t = error;
+            }
+            attempt++;
+            if (t==null) {
+                LOGGER.debug("send event success, attempt:{}, event:{}", attempt, EventUtil.eventToJson(event));
+                return;
+            }
+            if (!isRunning || !needAttempt(attempt)) {
+                LOGGER.warn("send event failed, attempt:{}, event:{}", attempt, EventUtil.eventToJson(event), t);
+                throw t;
+            }
+            LOGGER.info("send event has error will retry, attempt:{}, event:{},error:{}", attempt, event.getId(), t);
+            Thread.sleep(Sleep.Backoff(attempt, 5000));
+        }
     }
 
     public void runLoop() {
@@ -79,26 +139,17 @@ public class SourceWorker implements ConnectorWorker {
                 if (tuple==null) {
                     continue;
                 }
-                LOGGER.info("new event:{}", tuple.getEvent().getId());
-                breaker.execute(promise ->
-                        VertxMessageFactory.createWriter(webClient.postAbs(config.getTarget()))
-                                .writeStructured(tuple.getEvent(), JsonFormat.CONTENT_TYPE)
-                                .onSuccess(r ->
-                                        promise.complete()
-                                ).onFailure(r ->
-                                        LOGGER.info("send event error {}", tuple.getEvent().getId(), r.getCause())
-                                )
-                ).onSuccess(r -> {
-                    LOGGER.debug("send event success {}", EventUtil.eventToJson(tuple.getEvent()));
+                LOGGER.debug("new event:{}", tuple.getEvent().getId());
+                try {
+                    sendEvent(tuple.getEvent());
                     if (tuple.getSuccess()!=null) {
                         tuple.getSuccess().call();
                     }
-                }).onFailure(r -> {
-                    LOGGER.warn("send event failed {}", EventUtil.eventToJson(tuple.getEvent()), r.getCause());
+                } catch (Throwable t) {
                     if (tuple.getFailed()!=null) {
-                        tuple.getFailed().call(r.getMessage());
+                        tuple.getFailed().call(t.getMessage());
                     }
-                });
+                }
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }

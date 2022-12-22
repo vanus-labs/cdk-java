@@ -77,6 +77,7 @@ public abstract class DebeziumSource implements Source, DebeziumEngine.ChangeCon
                 break;
             case "data":
                 builder.withData(convertData(value));
+                break;
             default:
                 builder.withExtension(key, value.toString());
                 break;

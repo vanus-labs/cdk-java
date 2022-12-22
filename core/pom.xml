@@ -17,7 +17,6 @@
         <module-name>con.linkall.cdk.core</module-name>
         <log4j2.version>2.17.1</log4j2.version>
         <cloudevents.version>2.4.0</cloudevents.version>
-        <vertx.version>4.2.5</vertx.version>
         <jackson.version>2.11.3</jackson.version>
     </properties>
 
@@ -26,6 +25,11 @@
             <groupId>com.fasterxml.jackson.dataformat</groupId>
             <artifactId>jackson-dataformat-yaml</artifactId>
             <version>${jackson.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.cloudevents</groupId>
+            <artifactId>cloudevents-http-basic</artifactId>
+            <version>${cloudevents.version}</version>
         </dependency>
         <dependency>
             <groupId>io.cloudevents</groupId>
@@ -38,9 +42,9 @@
             <version>${cloudevents.version}</version>
         </dependency>
         <dependency>
-            <groupId>io.vertx</groupId>
-            <artifactId>vertx-circuit-breaker</artifactId>
-            <version>${vertx.version}</version>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpclient</artifactId>
+            <version>4.5.14</version>
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
