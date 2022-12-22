@@ -5,11 +5,14 @@ import com.linkall.cdk.connector.Source;
 import com.linkall.cdk.connector.Tuple;
 import com.linkall.cdk.runtime.ConnectorWorker;
 import com.linkall.cdk.util.EventUtil;
+import com.linkall.cdk.util.Sleep;
+import io.cloudevents.CloudEvent;
 import io.cloudevents.http.vertx.VertxMessageFactory;
 import io.cloudevents.jackson.JsonFormat;
-import io.vertx.circuitbreaker.CircuitBreaker;
-import io.vertx.circuitbreaker.CircuitBreakerOptions;
+import io.vertx.core.Future;
 import io.vertx.core.Vertx;
+import io.vertx.core.buffer.Buffer;
+import io.vertx.ext.web.client.HttpResponse;
 import io.vertx.ext.web.client.WebClient;
 import io.vertx.ext.web.client.WebClientOptions;
 import org.slf4j.Logger;
@@ -17,15 +20,14 @@ import org.slf4j.LoggerFactory;
 
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicReference;
+
+import static java.net.HttpURLConnection.*;
 
 public class SourceWorker implements ConnectorWorker {
     private static final Logger LOGGER = LoggerFactory.getLogger(SourceWorker.class);
     private final WebClient webClient;
-    private final CircuitBreaker breaker;
 
     private final Source source;
     private final SourceConfig config;
@@ -37,10 +39,6 @@ public class SourceWorker implements ConnectorWorker {
         this.source = source;
         this.config = config;
         Vertx vertx = Vertx.vertx();
-        breaker = CircuitBreaker.create("my-circuit-breaker", vertx,
-                new CircuitBreakerOptions()
-                        .setMaxRetries(config.getSendEventAttempts() - 1)
-                        .setTimeout(3000));
         webClient = WebClient.create(vertx, new WebClientOptions().setUserAgent("cdk-java-" + source.name()));
         executorService = Executors.newSingleThreadExecutor();
     }
@@ -72,6 +70,46 @@ public class SourceWorker implements ConnectorWorker {
         LOGGER.info("source worker stopped");
     }
 
+    private boolean needAttempt(int attempt) {
+        if (config.getSendEventAttempts() <= 0) {
+            return true;
+        }
+        return attempt < config.getSendEventAttempts();
+    }
+
+    private void sendEvent(CloudEvent event) throws Throwable {
+        int attempt = 0;
+        AtomicReference<Throwable> error = new AtomicReference<>();
+        for (; ; ) {
+            CountDownLatch latch = new CountDownLatch(1);
+            Future<HttpResponse<Buffer>> future = VertxMessageFactory.createWriter(webClient.postAbs(config.getTarget()))
+                    .writeStructured(event, JsonFormat.CONTENT_TYPE);
+            attempt++;
+            future.onComplete(ar -> {
+                if (ar.failed()) {
+                    error.set(ar.cause());
+                } else if (ar.result().statusCode()!=HTTP_OK
+                        && ar.result().statusCode()!=HTTP_NO_CONTENT
+                        && ar.result().statusCode()!=HTTP_ACCEPTED) {
+                    error.set(new Exception(String.format("response failed: code %d, body [%s]", ar.result().statusCode(), ar.result().bodyAsString())));
+                }
+                latch.countDown();
+            });
+            latch.await(10, TimeUnit.SECONDS);
+            Throwable t = error.get();
+            if (t==null) {
+                LOGGER.debug("send event success, attempt:{}, event:{}", attempt, EventUtil.eventToJson(event));
+                return;
+            }
+            if (!isRunning || !needAttempt(attempt)) {
+                LOGGER.warn("send event failed, attempt:{}, event:{}", attempt, EventUtil.eventToJson(event), t);
+                throw t;
+            }
+            LOGGER.info("send event has error will retry, attempt:{}, event:{},error:{}", attempt, event.getId(), t);
+            Thread.sleep(Sleep.Backoff(attempt, 5000));
+        }
+    }
+
     public void runLoop() {
         while (isRunning) {
             try {
@@ -79,26 +117,17 @@ public class SourceWorker implements ConnectorWorker {
                 if (tuple==null) {
                     continue;
                 }
-                LOGGER.info("new event:{}", tuple.getEvent().getId());
-                breaker.execute(promise ->
-                        VertxMessageFactory.createWriter(webClient.postAbs(config.getTarget()))
-                                .writeStructured(tuple.getEvent(), JsonFormat.CONTENT_TYPE)
-                                .onSuccess(r ->
-                                        promise.complete()
-                                ).onFailure(r ->
-                                        LOGGER.info("send event error {}", tuple.getEvent().getId(), r.getCause())
-                                )
-                ).onSuccess(r -> {
-                    LOGGER.debug("send event success {}", EventUtil.eventToJson(tuple.getEvent()));
+                LOGGER.debug("new event:{}", tuple.getEvent().getId());
+                try {
+                    sendEvent(tuple.getEvent());
                     if (tuple.getSuccess()!=null) {
                         tuple.getSuccess().call();
                     }
-                }).onFailure(r -> {
-                    LOGGER.warn("send event failed {}", EventUtil.eventToJson(tuple.getEvent()), r.getCause());
+                } catch (Throwable t) {
                     if (tuple.getFailed()!=null) {
-                        tuple.getFailed().call(r.getMessage());
+                        tuple.getFailed().call(t.getMessage());
                     }
-                });
+                }
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
