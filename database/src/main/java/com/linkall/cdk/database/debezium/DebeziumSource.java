@@ -14,167 +14,163 @@
 
 package com.linkall.cdk.database.debezium;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.linkall.cdk.config.Config;
 import com.linkall.cdk.connector.Source;
 import com.linkall.cdk.connector.Tuple;
-import io.debezium.embedded.Connect;
+import com.linkall.cdk.util.EventUtil;
+import io.cloudevents.CloudEvent;
+import io.cloudevents.CloudEventData;
+import io.cloudevents.core.v1.CloudEventBuilder;
 import io.debezium.engine.ChangeEvent;
 import io.debezium.engine.DebeziumEngine;
+import io.debezium.engine.format.CloudEvents;
 import io.debezium.engine.spi.OffsetCommitPolicy;
-import io.vertx.core.json.JsonObject;
-import org.apache.kafka.connect.json.JsonConverter;
-import org.apache.kafka.connect.json.JsonConverterConfig;
-import org.apache.kafka.connect.source.SourceRecord;
-import org.apache.kafka.connect.storage.Converter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
-import java.util.*;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import java.time.OffsetDateTime;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.*;
 
-public abstract class DebeziumSource implements Source {
-    protected static final Logger LOGGER = LoggerFactory.getLogger(DebeziumSource.class);
-    private DebeziumEngine.ChangeConsumer<ChangeEvent<SourceRecord, SourceRecord>> consumer;
-    private DebeziumEngine<ChangeEvent<SourceRecord, SourceRecord>> engine;
+public abstract class DebeziumSource implements Source, DebeziumEngine.ChangeConsumer<ChangeEvent<String, String>> {
+    private static final Logger LOGGER = LoggerFactory.getLogger(DebeziumSource.class);
+    private final ObjectMapper mapper = new ObjectMapper();
+    private final BlockingQueue<Tuple> events;
+    protected DebeziumConfig debeziumConfig;
+    private DebeziumEngine<ChangeEvent<String, String>> engine;
     private ExecutorService executor;
-    protected DbConfig dbConfig;
-    protected BlockingQueue<Tuple> events;
 
     public DebeziumSource() {
-        events = new ArrayBlockingQueue<>(100);
+        this.events = new LinkedBlockingQueue<>();
     }
 
-    public abstract Adapter getAdapter();
-
-    public abstract DbConfig getDbConfig();
-
-    public abstract String getConnectorClass();
-
-    public abstract Map<String, Object> getConfigOffset();
-
-    public abstract Properties getDebeziumProperties();
-
-    public abstract Set<String> getSystemExcludedTables();
-
-    public String getOffsetKey() {
-        return null;
-    }
-
-    public void start() {
-        dbConfig = getDbConfig();
-        consumer = new RecordConsumer(events, getAdapter());
-        engine =
-                DebeziumEngine.create(Connect.class)
-                        .using(getProperties())
-                        .using(OffsetCommitPolicy.always())
-                        .notifying(consumer)
-                        .using((success, message, error) ->
-                                LOGGER.info("Debezium engine shutdown,success: {}, message: {}", success, message, error))
-                        .build();
-        executor = Executors.newSingleThreadExecutor();
-        executor.execute(engine);
-    }
-
-    private Properties getProperties() {
-        final Properties props = new Properties();
-
-//        props.setProperty("test.disable.global.locking","true");
-        // debezium engine configuration
-        props.setProperty("connector.class", getConnectorClass());
-        // snapshot config
-        props.setProperty("snapshot.mode", "initial");
-        // DO NOT include schema change, e.g. DDL
-        props.setProperty("include.schema.changes", "false");
-        // disable tombstones
-        props.setProperty("tombstones.on.delete", "false");
-
-        // offset
-        props.setProperty("offset.storage", KvStoreOffsetBackingStore.class.getCanonicalName());
-        if (getOffsetKey()!=null) {
-            props.setProperty(
-                    KvStoreOffsetBackingStore.OFFSET_STORAGE_KV_STORE_KEY_CONFIG, getOffsetKey());
+    protected void adapt(CloudEventBuilder builder, String key, Object value) throws IOException {
+        switch (key) {
+            case "id":
+                builder.withId(UUID.randomUUID().toString());
+                break;
+            case "source":
+                builder.withSource(URI.create(value.toString()));
+                break;
+            case "specversion":
+                break;
+            case "type":
+                builder.withType(value.toString());
+                break;
+            case "datacontenttype":
+                builder.withDataContentType(value.toString());
+                break;
+            case "dataschema":
+                builder.withDataSchema(URI.create(value.toString()));
+                break;
+            case "subject":
+                builder.withSubject(value.toString());
+                break;
+            case "time":
+                builder.withTime(OffsetDateTime.parse(value.toString()));
+                break;
+            case "data":
+                builder.withData(convertData(value));
+            default:
+                builder.withExtension(key, value.toString());
+                break;
         }
-        Map<String, Object> configOffset = getConfigOffset();
-        if (configOffset!=null && configOffset.size() > 0) {
-            Converter valueConverter = new JsonConverter();
-            Map<String, Object> valueConfigs = new HashMap<>();
-            valueConfigs.put(JsonConverterConfig.SCHEMAS_ENABLE_CONFIG, false);
-            valueConverter.configure(valueConfigs, false);
-            byte[] offsetValue = valueConverter.fromConnectData(dbConfig.getDatabase(), null, configOffset);
-            props.setProperty(
-                    KvStoreOffsetBackingStore.OFFSET_CONFIG_VALUE,
-                    new String(offsetValue, StandardCharsets.UTF_8));
-        }
-
-        props.setProperty("offset.flush.interval.ms", "1000");
-
-        // https://debezium.io/documentation/reference/configuration/avro.html
-        props.setProperty("key.converter.schemas.enable", "false");
-        props.setProperty("value.converter.schemas.enable", "false");
-
-        // debezium names
-        props.setProperty("name", dbConfig.getDatabase());
-        props.setProperty("database.server.name", dbConfig.getDatabase());
-
-        // db connection configuration
-        props.setProperty("database.hostname", dbConfig.getHost());
-        props.setProperty("database.port", dbConfig.getPort());
-        props.setProperty("database.user", dbConfig.getUsername());
-        props.setProperty("database.dbname", dbConfig.getDatabase());
-        props.setProperty("database.password", dbConfig.getPassword());
-
-        props.putAll(getDebeziumProperties());
-        return props;
     }
 
-    public Properties getDebeziumProperties(JsonObject debezium) {
-        final Properties debeziumProperties = new Properties();
-
-        debezium.stream().forEach(k -> {
-            debeziumProperties.put(k.getKey(), debezium.getString(k.getKey()));
-        });
-
-        return debeziumProperties;
-    }
-
-    public Set<String> getExcludedTables(Set<String> excludeTables) {
-        Set<String> exclude = new HashSet<>(getSystemExcludedTables());
-        exclude.addAll(excludeTables);
-        return exclude;
-    }
-
-    public String tableFormat(String name, Stream<String> table) {
-        return table
-                .map(stream -> name + "." + stream)
-                .collect(Collectors.joining(","));
-    }
+    abstract protected CloudEventData convertData(Object data) throws IOException;
 
     @Override
-    public Class<? extends Config> configClass() {
-        return null;
-    }
-
-    @Override
-    public void initialize(Config config) throws Exception {
-        start();
-    }
-
-
-    @Override
-    public void destroy() throws Exception {
-        if (engine!=null)
+    final public void destroy() throws Exception {
+        if (engine != null)
             engine.close();
         executor.shutdown();
     }
 
     @Override
-    public BlockingQueue<Tuple> queue() {
+    final public BlockingQueue<Tuple> queue() {
         return events;
+    }
+
+    @Override
+    final public void initialize(Config config) throws Exception {
+        Class<? extends Config> c = this.configClass();
+        if (!c.isInstance(config)) {
+            throw new Exception("invalid config class, " + c.getName() + " is needed");
+        }
+        this.debeziumConfig = (DebeziumConfig) config;
+        this.start();
+    }
+
+    @Override
+    final public void handleBatch(List<ChangeEvent<String, String>> records,
+                            DebeziumEngine.RecordCommitter<ChangeEvent<String, String>> committer)
+            throws InterruptedException {
+        CountDownLatch latch = new CountDownLatch(records.size());
+        for (ChangeEvent<String, String> record : records) {
+            LOGGER.info("Received event '{}'", record);
+            if (record.value() == null) {
+                latch.countDown();
+                continue;
+            }
+            try {
+                CloudEvent ceEvent = this.convert(record.value());
+                events.put(
+                    new Tuple(ceEvent,
+                        () -> commit(latch, record, committer),
+                        (msg) -> {
+                            LOGGER.error("event send failed:{},{}", msg, EventUtil.eventToJson(ceEvent));
+                            commit(latch, record, committer);
+                        }
+                    )
+                );
+            } catch (IOException e) {
+                latch.countDown(); // How to process offset?
+                LOGGER.error("failed to parse record data {} to json, error: {}", record.value(), e);
+            }
+        }
+        latch.await();
+        committer.markBatchFinished();
+    }
+
+    final protected void start() {
+        engine = DebeziumEngine.create(CloudEvents.class)
+                .using(this.debeziumConfig.getProperties())
+                .using(OffsetCommitPolicy.always())
+                .notifying(this)
+                .using((success, message, error) ->
+                        LOGGER.info("Debezium engine shutdown,success: {}, message: {}", success, message, error))
+                .build();
+        executor = Executors.newSingleThreadExecutor();
+        executor.execute(engine);
+    }
+
+    private CloudEvent convert(String record) throws IOException {
+        Map<String, Object> m = this.mapper.readValue(record.getBytes(StandardCharsets.UTF_8), Map.class);
+        CloudEventBuilder builder = new CloudEventBuilder();
+        for (Map.Entry<String, Object> entry : m.entrySet()) {
+            if (entry.getValue() == null) {
+                continue;
+            }
+            this.adapt(builder, entry.getKey(), entry.getValue());
+        }
+        return builder.build();
+    }
+
+    private void commit(
+            CountDownLatch latch,
+            ChangeEvent<String, String> record,
+            DebeziumEngine.RecordCommitter<ChangeEvent<String, String>> committer) {
+        try {
+            committer.markProcessed(record);
+        } catch (InterruptedException e) {
+            LOGGER.warn("Failed to mark processed record: {},error: {}", record.value(), e);
+        }
+        latch.countDown();
     }
 }

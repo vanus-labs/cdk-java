@@ -38,7 +38,7 @@ import java.util.stream.Collectors;
 public class KvStoreOffsetBackingStore extends MemoryOffsetBackingStore {
     public static final String OFFSET_STORAGE_KV_STORE_KEY_CONFIG = "offset.storage.kv.key";
     public static final String OFFSET_CONFIG_VALUE = "offset.config.value";
-    private static final String DEFAULT_KEY_NAME = "vance_debezium_offset";
+    private static final String DEFAULT_KEY_NAME = "cdk_debezium_offset";
 
     private static final Logger logger = LoggerFactory.getLogger(KvStoreOffsetBackingStore.class);
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -71,7 +71,7 @@ public class KvStoreOffsetBackingStore extends MemoryOffsetBackingStore {
                 Optional.ofNullable(map.get(OFFSET_STORAGE_KV_STORE_KEY_CONFIG)).orElse(DEFAULT_KEY_NAME);
         // read from config
         String offsetConfigValue = map.get(OFFSET_CONFIG_VALUE);
-        if (offsetConfigValue==null || offsetConfigValue.isEmpty()) {
+        if (offsetConfigValue == null || offsetConfigValue.isEmpty()) {
             return;
         }
         String engineName = map.get(EmbeddedEngine.ENGINE_NAME.name());
@@ -100,7 +100,7 @@ public class KvStoreOffsetBackingStore extends MemoryOffsetBackingStore {
 
     private void load() {
         byte[] value = store.get(keyName);
-        if (value==null) {
+        if (value == null) {
             return;
         }
         loadFromKvStore(value);
