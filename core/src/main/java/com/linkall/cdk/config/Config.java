@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 public abstract class Config {
 
-    @JsonProperty("store_config")
+    @JsonProperty("store")
     private StoreConfig storeConfig;
 
     public Class<?> secretClass() {
