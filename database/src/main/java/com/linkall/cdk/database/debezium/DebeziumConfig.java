@@ -8,7 +8,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public abstract class DebeziumConfig extends SourceConfig {
-    @JsonProperty("custom_debezium")
+    @JsonProperty("dbz_properties")
     private Properties customDebezium;
 
     protected abstract Properties getDebeziumProperties();
