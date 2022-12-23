@@ -1,10 +1,16 @@
 package com.linkall.cdk.database.debezium;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.linkall.cdk.config.SourceConfig;
+
 import java.util.Properties;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public abstract class DebeziumConfig extends com.linkall.cdk.config.SourceConfig {
+public abstract class DebeziumConfig extends SourceConfig {
+    @JsonProperty("dbz_properties")
+    private Properties customDebezium;
+
     protected abstract Properties getDebeziumProperties();
 
     protected String tableFormat(String name, Stream<String> table) {
@@ -51,6 +57,9 @@ public abstract class DebeziumConfig extends com.linkall.cdk.config.SourceConfig
         props.setProperty("value.converter.json.schemas.enable", "false");
 
         props.putAll(getDebeziumProperties());
+        if (customDebezium!=null) {
+            props.putAll(customDebezium);
+        }
         return props;
     }
 }

@@ -7,7 +7,7 @@ public class StoreConfig {
     @JsonProperty("type")
     private StoreType type;
 
-    @JsonProperty("store_file")
+    @JsonProperty("pathname")
     private String storeFile;
 
     public StoreType getType() {
