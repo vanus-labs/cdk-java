@@ -18,7 +18,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Preconditions;
 import com.linkall.cdk.store.KVStore;
 import com.linkall.cdk.store.KVStoreFactory;
-import io.debezium.embedded.EmbeddedEngine;
 import org.apache.kafka.connect.json.JsonConverter;
 import org.apache.kafka.connect.runtime.WorkerConfig;
 import org.apache.kafka.connect.storage.Converter;
@@ -74,13 +73,12 @@ public class KvStoreOffsetBackingStore extends MemoryOffsetBackingStore {
         if (offsetConfigValue == null || offsetConfigValue.isEmpty()) {
             return;
         }
-        String engineName = map.get(EmbeddedEngine.ENGINE_NAME.name());
-        String dbServerName = map.get("database.server.name");
+        String serverName = map.get("name");
         Converter keyConverter = new JsonConverter();
         keyConverter.configure(config.originals(), true);
         Map<String, Object> keyMap = new HashMap<>();
-        keyMap.put("server", dbServerName);
-        byte[] key = keyConverter.fromConnectData(engineName, null, Arrays.asList(engineName, keyMap));
+        keyMap.put("server", serverName);
+        byte[] key = keyConverter.fromConnectData(serverName, null, Arrays.asList(serverName, keyMap));
         logger.info("offset config,key: {}, value: {}", new String(key), offsetConfigValue);
         data.put(ByteBuffer.wrap(key), stringToByteBuffer(offsetConfigValue));
     }
