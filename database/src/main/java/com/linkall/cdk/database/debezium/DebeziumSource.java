@@ -88,7 +88,7 @@ public abstract class DebeziumSource implements Source, DebeziumEngine.ChangeCon
 
     @Override
     final public void destroy() throws Exception {
-        if (engine != null)
+        if (engine!=null)
             engine.close();
         executor.shutdown();
     }
@@ -110,25 +110,28 @@ public abstract class DebeziumSource implements Source, DebeziumEngine.ChangeCon
 
     @Override
     final public void handleBatch(List<ChangeEvent<String, String>> records,
-                            DebeziumEngine.RecordCommitter<ChangeEvent<String, String>> committer)
+                                  DebeziumEngine.RecordCommitter<ChangeEvent<String, String>> committer)
             throws InterruptedException {
         CountDownLatch latch = new CountDownLatch(records.size());
+        LOGGER.info("Received event count {}", records.size());
+        int i = 0;
         for (ChangeEvent<String, String> record : records) {
-            LOGGER.info("Received event '{}'", record);
-            if (record.value() == null) {
+            i++;
+            LOGGER.info("Received event detail {} {}", i, record);
+            if (record.value()==null) {
                 latch.countDown();
                 continue;
             }
             try {
                 CloudEvent ceEvent = this.convert(record.value());
                 events.put(
-                    new Tuple(ceEvent,
-                        () -> commit(latch, record, committer),
-                        (msg) -> {
-                            LOGGER.error("event send failed:{},{}", msg, EventUtil.eventToJson(ceEvent));
-                            commit(latch, record, committer);
-                        }
-                    )
+                        new Tuple(ceEvent,
+                                () -> commit(latch, record, committer),
+                                (msg) -> {
+                                    LOGGER.error("event send failed:{},{}", msg, EventUtil.eventToJson(ceEvent));
+                                    commit(latch, record, committer);
+                                }
+                        )
                 );
             } catch (IOException e) {
                 latch.countDown(); // How to process offset?
@@ -136,7 +139,10 @@ public abstract class DebeziumSource implements Source, DebeziumEngine.ChangeCon
             }
         }
         latch.await();
+        LOGGER.info("Received event count await {}", records.size());
         committer.markBatchFinished();
+        LOGGER.info("Received event count end {}", records.size());
+
     }
 
     final protected void start() {
@@ -155,7 +161,7 @@ public abstract class DebeziumSource implements Source, DebeziumEngine.ChangeCon
         Map<String, Object> m = this.mapper.readValue(record.getBytes(StandardCharsets.UTF_8), Map.class);
         CloudEventBuilder builder = new CloudEventBuilder();
         for (Map.Entry<String, Object> entry : m.entrySet()) {
-            if (entry.getValue() == null) {
+            if (entry.getValue()==null) {
                 continue;
             }
             this.adapt(builder, entry.getKey(), entry.getValue());
@@ -167,6 +173,7 @@ public abstract class DebeziumSource implements Source, DebeziumEngine.ChangeCon
             CountDownLatch latch,
             ChangeEvent<String, String> record,
             DebeziumEngine.RecordCommitter<ChangeEvent<String, String>> committer) {
+        LOGGER.info("commit record:{}", record);
         try {
             committer.markProcessed(record);
         } catch (InterruptedException e) {

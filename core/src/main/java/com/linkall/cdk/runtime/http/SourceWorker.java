@@ -120,7 +120,7 @@ public class SourceWorker implements ConnectorWorker {
             }
             attempt++;
             if (t==null) {
-                LOGGER.debug("send event success, attempt:{}, event:{}", attempt, EventUtil.eventToJson(event));
+                LOGGER.info("send event success, attempt:{}, event:{}", attempt, event.getId());
                 return;
             }
             if (!isRunning || !needAttempt(attempt)) {
@@ -139,7 +139,7 @@ public class SourceWorker implements ConnectorWorker {
                 if (tuple==null) {
                     continue;
                 }
-                LOGGER.debug("new event:{}", tuple.getEvent().getId());
+                LOGGER.info("new event:{}", tuple.getEvent().getId());
                 try {
                     sendEvent(tuple.getEvent());
                     if (tuple.getSuccess()!=null) {
