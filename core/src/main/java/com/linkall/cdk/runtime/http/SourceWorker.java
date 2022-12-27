@@ -15,7 +15,7 @@ import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
+import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.util.EntityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,12 +27,13 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static java.net.HttpURLConnection.*;
 
 public class SourceWorker implements ConnectorWorker {
     private static final Logger LOGGER = LoggerFactory.getLogger(SourceWorker.class);
-    private static final int TIMEOUT_MS = 1000;
+    private static final int TIMEOUT_MS = 10_000;
     private final CloseableHttpClient httpClient;
     private URI target;
 
@@ -41,12 +42,17 @@ public class SourceWorker implements ConnectorWorker {
     private final ExecutorService executorService;
     private volatile boolean isRunning = true;
     private BlockingQueue<Tuple> queue;
+    private AtomicLong total;
 
     public SourceWorker(Source source, SourceConfig config) {
         this.source = source;
         this.config = config;
-        this.httpClient = HttpClients.createDefault();
+        this.httpClient = HttpClientBuilder.create().setDefaultRequestConfig(RequestConfig.custom()
+                .setConnectionRequestTimeout(TIMEOUT_MS)
+                .setConnectTimeout(TIMEOUT_MS)
+                .setSocketTimeout(TIMEOUT_MS).build()).build();
         executorService = Executors.newSingleThreadExecutor();
+        total = new AtomicLong();
     }
 
     @Override
@@ -94,33 +100,26 @@ public class SourceWorker implements ConnectorWorker {
     }
 
     private MessageWriter createWriter(HttpPost httpPost) {
-        return HttpMessageFactory.createWriter(
-                httpPost::addHeader,
-                body -> {
-                    httpPost.setEntity(new ByteArrayEntity(body));
-                    try (CloseableHttpResponse httpResponse = httpClient.execute(httpPost)) {
-                        int code = httpResponse.getStatusLine().getStatusCode();
-                        if (code!=HTTP_OK && code!=HTTP_ACCEPTED && code!=HTTP_NO_CONTENT) {
-                            throw new RuntimeException(String.format("response failed: code %d, body:[%s]", code, EntityUtils.toString(httpResponse.getEntity())));
-                        }
-                    } catch (IOException e) {
-                        throw new RuntimeException(e);
-                    }
-                });
+        return HttpMessageFactory.createWriter(httpPost::addHeader, body -> {
+            httpPost.setEntity(new ByteArrayEntity(body));
+            try (CloseableHttpResponse httpResponse = httpClient.execute(httpPost)) {
+                int code = httpResponse.getStatusLine().getStatusCode();
+                if (code!=HTTP_OK && code!=HTTP_ACCEPTED && code!=HTTP_NO_CONTENT) {
+                    throw new RuntimeException(String.format("response failed: code %d, body:[%s]", code, EntityUtils.toString(httpResponse.getEntity())));
+                }
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        });
     }
 
     private void sendEvent(CloudEvent event) throws Throwable {
         int attempt = 0;
         Throwable t;
         for (; ; ) {
+            attempt++;
             t = null;
             HttpPost httpPost = new HttpPost(target);
-            RequestConfig requestConfig = RequestConfig.custom()
-                    .setConnectionRequestTimeout(TIMEOUT_MS)
-                    .setConnectTimeout(TIMEOUT_MS)
-                    .setSocketTimeout(TIMEOUT_MS)
-                    .build();
-            httpPost.setConfig(requestConfig);
             long start = System.currentTimeMillis();
             try {
                 createWriter(httpPost).writeStructured(event, JsonFormat.CONTENT_TYPE);
@@ -128,13 +127,11 @@ public class SourceWorker implements ConnectorWorker {
                 t = error;
             }
             long spent = System.currentTimeMillis() - start;
-            if (spent > 500) {
-                LOGGER.warn("sent event too slow, spent: {}, attempt:{}, eventId:{}",
-                        spent, attempt, event.getId());
+            if (spent > 1000) {
+                LOGGER.info("sent event too slow, spent: {}, attempt:{}, eventId:{}", spent, attempt, event.getId());
             }
-            attempt++;
             if (t==null) {
-                LOGGER.debug("send event success, attempt:{}, eventId:{}", attempt, event.getId());
+                LOGGER.info("send event success, total:{}, attempt:{}, eventId:{}", total.addAndGet(1), attempt, event.getId());
                 return;
             }
             if (!isRunning || !needAttempt(attempt)) {
@@ -153,6 +150,7 @@ public class SourceWorker implements ConnectorWorker {
                 if (tuple==null) {
                     continue;
                 }
+                LOGGER.info("new event: {}", tuple.getEvent().getId());
                 try {
                     sendEvent(tuple.getEvent());
                     if (tuple.getSuccess()!=null) {
