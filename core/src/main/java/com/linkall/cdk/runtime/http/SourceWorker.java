@@ -10,6 +10,7 @@ import io.cloudevents.CloudEvent;
 import io.cloudevents.core.message.MessageWriter;
 import io.cloudevents.http.HttpMessageFactory;
 import io.cloudevents.jackson.JsonFormat;
+import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.ByteArrayEntity;
@@ -31,7 +32,8 @@ import static java.net.HttpURLConnection.*;
 
 public class SourceWorker implements ConnectorWorker {
     private static final Logger LOGGER = LoggerFactory.getLogger(SourceWorker.class);
-    private CloseableHttpClient httpClient;
+    private static final int TIMEOUT_MS = 1000;
+    private final CloseableHttpClient httpClient;
     private URI target;
 
     private final Source source;
@@ -43,7 +45,7 @@ public class SourceWorker implements ConnectorWorker {
     public SourceWorker(Source source, SourceConfig config) {
         this.source = source;
         this.config = config;
-        httpClient = HttpClients.createDefault();
+        this.httpClient = HttpClients.createDefault();
         executorService = Executors.newSingleThreadExecutor();
     }
 
@@ -113,14 +115,26 @@ public class SourceWorker implements ConnectorWorker {
         for (; ; ) {
             t = null;
             HttpPost httpPost = new HttpPost(target);
+            RequestConfig requestConfig = RequestConfig.custom()
+                    .setConnectionRequestTimeout(TIMEOUT_MS)
+                    .setConnectTimeout(TIMEOUT_MS)
+                    .setSocketTimeout(TIMEOUT_MS)
+                    .build();
+            httpPost.setConfig(requestConfig);
+            long start = System.currentTimeMillis();
             try {
                 createWriter(httpPost).writeStructured(event, JsonFormat.CONTENT_TYPE);
             } catch (Throwable error) {
                 t = error;
             }
+            long spent = System.currentTimeMillis() - start;
+            if (spent > 500) {
+                LOGGER.warn("sent event too slow, spent: {}, attempt:{}, eventId:{}",
+                        spent, attempt, event.getId());
+            }
             attempt++;
             if (t==null) {
-                LOGGER.info("send event success, attempt:{}, event:{}", attempt, event.getId());
+                LOGGER.debug("send event success, attempt:{}, eventId:{}", attempt, event.getId());
                 return;
             }
             if (!isRunning || !needAttempt(attempt)) {
@@ -139,7 +153,6 @@ public class SourceWorker implements ConnectorWorker {
                 if (tuple==null) {
                     continue;
                 }
-                LOGGER.info("new event:{}", tuple.getEvent().getId());
                 try {
                     sendEvent(tuple.getEvent());
                     if (tuple.getSuccess()!=null) {

@@ -114,10 +114,7 @@ public abstract class DebeziumSource implements Source, DebeziumEngine.ChangeCon
             throws InterruptedException {
         CountDownLatch latch = new CountDownLatch(records.size());
         LOGGER.info("Received event count {}", records.size());
-        int i = 0;
         for (ChangeEvent<String, String> record : records) {
-            i++;
-            LOGGER.info("Received event detail {} {}", i, record);
             if (record.value()==null) {
                 latch.countDown();
                 continue;
@@ -173,7 +170,6 @@ public abstract class DebeziumSource implements Source, DebeziumEngine.ChangeCon
             CountDownLatch latch,
             ChangeEvent<String, String> record,
             DebeziumEngine.RecordCommitter<ChangeEvent<String, String>> committer) {
-        LOGGER.info("commit record:{}", record);
         try {
             committer.markProcessed(record);
         } catch (InterruptedException e) {
