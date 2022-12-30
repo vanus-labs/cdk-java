@@ -112,34 +112,31 @@ public abstract class DebeziumSource implements Source, DebeziumEngine.ChangeCon
     final public void handleBatch(List<ChangeEvent<String, String>> records,
                                   DebeziumEngine.RecordCommitter<ChangeEvent<String, String>> committer)
             throws InterruptedException {
-        CountDownLatch latch = new CountDownLatch(records.size());
+        CountDownLatch latch = new CountDownLatch(1);
         LOGGER.info("Received event count {}", records.size());
+        Tuple t = new Tuple();
+        t.setSuccess(latch::countDown);
+        t.setFailed((msg ) -> {
+            LOGGER.error("event send failed:{}, {}", msg, records);
+            latch.countDown();
+        });
+
         for (ChangeEvent<String, String> record : records) {
             if (record.value()==null) {
-                latch.countDown();
                 continue;
             }
             try {
-                CloudEvent ceEvent = this.convert(record.value());
-                events.put(
-                        new Tuple(ceEvent,
-                                () -> commit(latch, record, committer),
-                                (msg) -> {
-                                    LOGGER.error("event send failed:{},{}", msg, EventUtil.eventToJson(ceEvent));
-                                    commit(latch, record, committer);
-                                }
-                        )
-                );
+                t.addEvent(this.convert(record.value()));
             } catch (IOException e) {
                 latch.countDown(); // How to process offset?
                 LOGGER.error("failed to parse record data {} to json, error: {}", record.value(), e);
             }
         }
-        latch.await();
+        this.events.put(t);
         LOGGER.info("Received event count await {}", records.size());
+        latch.await();
         committer.markBatchFinished();
         LOGGER.info("Received event count end {}", records.size());
-
     }
 
     final protected void start() {

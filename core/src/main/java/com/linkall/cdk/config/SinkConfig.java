@@ -7,6 +7,8 @@ public class SinkConfig extends Config {
     @JsonProperty("port")
     private Integer port;
 
+    private Integer grpcPort;
+
     public Integer getPort() {
         if (port!=null) {
             return port;
@@ -20,6 +22,10 @@ public class SinkConfig extends Config {
             }
         }
         return Constants.DEFAULT_PORT;
+    }
+
+    public Integer getGRPCPort() {
+        return this.grpcPort;
     }
 
     public void setPort(Integer port) {

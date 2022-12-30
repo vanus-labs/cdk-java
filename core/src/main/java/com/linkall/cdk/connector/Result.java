@@ -30,4 +30,9 @@ public class Result {
         this.code = code;
         this.msg = msg;
     }
+
+    @Override
+    public String toString() {
+        return "{\"message\":\"" + this.msg +"\",\"code\":" + this.code + "}";
+    }
 }

@@ -10,15 +10,17 @@ public abstract class SourceConfig extends Config {
     @JsonProperty("send_event_attempts")
     private Integer sendEventAttempts;
 
+    @JsonProperty("vanus")
+    private Vanus vanus;
+
+    @JsonProperty("batch_size")
+    private int batchSize;
+
     public String getTarget() {
         if (target!=null && !target.isEmpty()) {
             return target;
         }
         return System.getenv(Constants.ENV_TARGET);
-    }
-
-    public void setTarget(String target) {
-        this.target = target;
     }
 
     public Integer getSendEventAttempts() {
@@ -28,7 +30,15 @@ public abstract class SourceConfig extends Config {
         return sendEventAttempts;
     }
 
-    public void setSendEventAttempts(Integer sendEventAttempts) {
-        this.sendEventAttempts = sendEventAttempts;
+    public Vanus getVanusConfig() {
+        return this.vanus;
+    }
+
+    public void setBatchSize(int batchSize) {
+        this.batchSize = batchSize;
+    }
+
+    public int getBatchSize() {
+        return this.batchSize;
     }
 }
