@@ -71,7 +71,7 @@ public class SinkWorker implements ConnectorWorker {
             HttpServerResponse response = request.response();
             try {
                 Result result = this.sink.Arrived(event);
-                if (result==null || result==Result.SUCCESS) {
+                if (result == null || result == Result.SUCCESS) {
                     request.response().end();
                 } else {
                     response.setStatusCode(result.getCode());

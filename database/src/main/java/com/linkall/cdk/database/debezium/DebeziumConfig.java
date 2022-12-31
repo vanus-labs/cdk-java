@@ -57,7 +57,7 @@ public abstract class DebeziumConfig extends SourceConfig {
         props.setProperty("value.converter.json.schemas.enable", "false");
 
         props.putAll(getDebeziumProperties());
-        if (customDebezium!=null) {
+        if (customDebezium != null) {
             props.putAll(customDebezium);
         }
         return props;

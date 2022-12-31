@@ -3,7 +3,6 @@ package com.linkall.cdk.runtime.sender;
 import com.linkall.cdk.proto.BatchEvent;
 import com.linkall.cdk.proto.CloudEventBatch;
 import com.linkall.cdk.proto.CloudEventsGrpc;
-import com.linkall.cdk.runtime.SourceWorker;
 import io.cloudevents.CloudEvent;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
@@ -15,6 +14,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class VanusSender implements Sender {
+    private static final int MAX_REQUEST_SIZE = 4 * 1024 * 1024; // 4MB
     private static final Logger LOGGER = LoggerFactory.getLogger(VanusSender.class);
     private final String endpoint;
     private final String eventbus;
@@ -31,13 +31,26 @@ public class VanusSender implements Sender {
     }
 
     @Override
-    public void sendEvents(CloudEvent[] events) {
-
-        List<com.linkall.cdk.proto.CloudEvent> list = new ArrayList<>(events.length);
-        for (int i = 0; i < events.length; i++) {
-            list.add(Codec.ToProto(events[i]));
+    public void sendEvents(List<CloudEvent> events) {
+        List<com.linkall.cdk.proto.CloudEvent> list = new ArrayList<>(events.size());
+        int size = 0;
+        for (CloudEvent event : events) {
+            com.linkall.cdk.proto.CloudEvent pe = Codec.ToProto(event);
+            if (size + pe.getSerializedSize() > MAX_REQUEST_SIZE) {
+                this.send(list);
+                size = 0;
+                list.clear();
+            }
+            size += pe.getSerializedSize();
+            list.add(Codec.ToProto(event));
         }
 
+        if (list.size() > 0) {
+            this.send(list);
+        }
+    }
+
+    private void send(List<com.linkall.cdk.proto.CloudEvent> list) {
         BatchEvent batchEvent = BatchEvent.newBuilder()
                 .setEventbusName(this.eventbus)
                 .setEvents(CloudEventBatch.newBuilder().addAllEvents(list))

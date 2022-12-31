@@ -10,9 +10,9 @@ import java.util.Objects;
 public class Codec {
     private static final String contentTypeProtobuf = "application/protobuf";
     private static final String datacontenttype = "datacontenttype";
-    private static final String dataschema      = "dataschema";
-    private static final String subject         = "subject";
-    private static final String timeStr         = "time";
+    private static final String dataschema = "dataschema";
+    private static final String subject = "subject";
+    private static final String timeStr = "time";
 
     public static CloudEvent ToProto(io.cloudevents.CloudEvent event) {
         CloudEvent.Builder builder = CloudEvent.newBuilder()
@@ -22,20 +22,20 @@ public class Codec {
                 .setType(event.getType());
 
         Map<String, CloudEvent.CloudEventAttributeValue> attrs = new HashMap<>();
-        if (event.getDataContentType() != null ) {
-               attrs.put(datacontenttype,  attributeFor(event.getDataContentType()));
+        if (event.getDataContentType() != null) {
+            attrs.put(datacontenttype, attributeFor(event.getDataContentType()));
         }
 
-        if (event.getDataSchema() != null ) {
-            attrs.put(dataschema,  attributeFor(event.getDataSchema()));
+        if (event.getDataSchema() != null) {
+            attrs.put(dataschema, attributeFor(event.getDataSchema()));
         }
 
-        if (event.getSubject() != null ) {
-            attrs.put(subject,  attributeFor(event.getSubject()));
+        if (event.getSubject() != null) {
+            attrs.put(subject, attributeFor(event.getSubject()));
         }
 
-        if (event.getTime() != null ) {
-            attrs.put(timeStr,  attributeFor(event.getTime()));
+        if (event.getTime() != null) {
+            attrs.put(timeStr, attributeFor(event.getTime()));
         }
 
         for (String name : event.getExtensionNames()) {
@@ -47,7 +47,7 @@ public class Codec {
 
         builder.setBinaryData(com.google.protobuf.ByteString.copyFrom(Objects.requireNonNull(event.getData()).toBytes()));
 
-        if (event.getDataContentType() == contentTypeProtobuf ) {
+        if (event.getDataContentType() == contentTypeProtobuf) {
             // TODO
         }
 
@@ -61,7 +61,7 @@ public class Codec {
             case "java.lang.Boolean":
                 return CloudEvent.CloudEventAttributeValue.newBuilder().setCeBoolean((Boolean) obj).build();
             case "java.lang.Integer":
-                return CloudEvent.CloudEventAttributeValue.newBuilder().setCeInteger((Integer)obj).build();
+                return CloudEvent.CloudEventAttributeValue.newBuilder().setCeInteger((Integer) obj).build();
             case "java.lang.String":
                 return CloudEvent.CloudEventAttributeValue.newBuilder().setCeString(obj.toString()).build();
             case "java.net.URI":

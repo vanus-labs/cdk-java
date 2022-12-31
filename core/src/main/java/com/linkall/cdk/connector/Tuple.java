@@ -1,19 +1,30 @@
 package com.linkall.cdk.connector;
 
-import io.cloudevents.CloudEvent;
-
 import java.util.LinkedList;
 import java.util.List;
 
 public class Tuple {
-    private final List<CloudEvent> event = new LinkedList<>();
+    private final List<Element> elements = new LinkedList<>();
 
     private SuccessCallback success;
 
     private FailedCallback failed;
 
-    public List<CloudEvent> getEventList() {
-        return this.event;
+    public Tuple() {
+    }
+
+    public Tuple(Element ele) {
+        this.elements.add(ele);
+    }
+
+    public Tuple(Element ele, SuccessCallback success, FailedCallback failed) {
+        this.elements.add(ele);
+        this.success = success;
+        this.failed = failed;
+    }
+
+    public List<Element> getElements() {
+        return this.elements;
     }
 
     public SuccessCallback getSuccess() {
@@ -32,20 +43,8 @@ public class Tuple {
         this.failed = failed;
     }
 
-    public Tuple(){}
-
-    public Tuple(CloudEvent event) {
-        this.event.add(event);
-    }
-
-    public Tuple(CloudEvent event, SuccessCallback success, FailedCallback failed) {
-        this.event.add(event);
-        this.success = success;
-        this.failed = failed;
-    }
-
-    public void addEvent(CloudEvent event) {
-        this.event.add(event);
+    public void addElement(Element element) {
+        this.elements.add(element);
     }
 }
 

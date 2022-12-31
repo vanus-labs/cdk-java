@@ -17,14 +17,14 @@ public abstract class SourceConfig extends Config {
     private int batchSize;
 
     public String getTarget() {
-        if (target!=null && !target.isEmpty()) {
+        if (target != null && !target.isEmpty()) {
             return target;
         }
         return System.getenv(Constants.ENV_TARGET);
     }
 
     public Integer getSendEventAttempts() {
-        if (sendEventAttempts==null) {
+        if (sendEventAttempts == null) {
             return Constants.DEFAULT_ATTEMPT;
         }
         return sendEventAttempts;
@@ -34,11 +34,11 @@ public abstract class SourceConfig extends Config {
         return this.vanus;
     }
 
-    public void setBatchSize(int batchSize) {
-        this.batchSize = batchSize;
-    }
-
     public int getBatchSize() {
         return this.batchSize;
+    }
+
+    public void setBatchSize(int batchSize) {
+        this.batchSize = batchSize;
     }
 }

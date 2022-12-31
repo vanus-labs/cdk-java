@@ -10,11 +10,11 @@ public class SinkConfig extends Config {
     private Integer grpcPort;
 
     public Integer getPort() {
-        if (port!=null) {
+        if (port != null) {
             return port;
         }
         String portStr = System.getenv(Constants.ENV_PORT);
-        if (portStr!=null && !portStr.isEmpty()) {
+        if (portStr != null && !portStr.isEmpty()) {
             try {
                 Integer port = Integer.parseInt(portStr);
                 return port;
@@ -24,11 +24,11 @@ public class SinkConfig extends Config {
         return Constants.DEFAULT_PORT;
     }
 
-    public Integer getGRPCPort() {
-        return this.grpcPort;
-    }
-
     public void setPort(Integer port) {
         this.port = port;
+    }
+
+    public Integer getGRPCPort() {
+        return this.grpcPort;
     }
 }

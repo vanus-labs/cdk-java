@@ -84,7 +84,7 @@ public class Application {
     }
 
     private static boolean isSink(Class<?> c) {
-        while (c!=null && c!=Object.class) {
+        while (c != null && c != Object.class) {
             if (isAssignableFrom(c, Sink.class)) {
                 return true;
             }
@@ -94,7 +94,7 @@ public class Application {
     }
 
     private static boolean isSource(Class<?> c) {
-        while (c!=null && c!=Object.class) {
+        while (c != null && c != Object.class) {
             if (isAssignableFrom(c, Source.class)) {
                 return true;
             }

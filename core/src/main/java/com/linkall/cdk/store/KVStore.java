@@ -8,7 +8,7 @@ public interface KVStore {
 
     void delete(String key) throws Exception;
 
-    void close() ;
+    void close();
 }
 
 

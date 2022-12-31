@@ -13,12 +13,13 @@ import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.util.EntityUtils;
 
 import java.io.IOException;
+import java.util.List;
 
 import static java.net.HttpURLConnection.*;
 
-public class HTTPSender implements Sender{
-    private final CloseableHttpClient httpClient;
+public class HTTPSender implements Sender {
     private static final int TIMEOUT_MS = 10_000;
+    private final CloseableHttpClient httpClient;
     private String target;
 
     public HTTPSender(String target) {
@@ -30,23 +31,27 @@ public class HTTPSender implements Sender{
     }
 
     @Override
-    public void sendEvents(CloudEvent[] events) {
-        if ((events.length) == 0) {
+    public void sendEvents(List<CloudEvent> events) {
+        if ((events.size()) == 0) {
             return;
         }
-        HttpPost httpPost = new HttpPost(this.target);
-        createWriter(httpPost).writeStructured(events[0], JsonFormat.CONTENT_TYPE);
+
+        for (CloudEvent event : events) {
+            HttpPost httpPost = new HttpPost(this.target);
+            createWriter(httpPost).writeStructured(event, JsonFormat.CONTENT_TYPE);
+        }
     }
 
     @Override
-    public void close() {}
+    public void close() {
+    }
 
     private MessageWriter createWriter(HttpPost httpPost) {
         return HttpMessageFactory.createWriter(httpPost::addHeader, body -> {
             httpPost.setEntity(new ByteArrayEntity(body));
             try (CloseableHttpResponse httpResponse = httpClient.execute(httpPost)) {
                 int code = httpResponse.getStatusLine().getStatusCode();
-                if (code!=HTTP_OK && code!=HTTP_ACCEPTED && code!=HTTP_NO_CONTENT) {
+                if (code != HTTP_OK && code != HTTP_ACCEPTED && code != HTTP_NO_CONTENT) {
                     throw new RuntimeException(String.format("response failed: code %d, body:[%s]", code, EntityUtils.toString(httpResponse.getEntity())));
                 }
             } catch (IOException e) {

@@ -1,6 +1,7 @@
 package com.linkall.cdk.runtime;
 
 import com.linkall.cdk.config.SourceConfig;
+import com.linkall.cdk.connector.Element;
 import com.linkall.cdk.connector.Source;
 import com.linkall.cdk.connector.Tuple;
 import com.linkall.cdk.runtime.sender.HTTPSender;
@@ -12,18 +13,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.ArrayList;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class SourceWorker implements ConnectorWorker {
     private static final Logger LOGGER = LoggerFactory.getLogger(SourceWorker.class);
@@ -42,7 +38,7 @@ public class SourceWorker implements ConnectorWorker {
         this.source = source;
         this.config = config;
         this.executorService = Executors.newSingleThreadExecutor();
-        this.senderExecutorService =Executors.newSingleThreadExecutor();
+        this.senderExecutorService = Executors.newSingleThreadExecutor();
         this.total = new AtomicLong();
         if (config.getVanusConfig() != null) {
             this.sender = new VanusSender(config.getVanusConfig().getEndpoint(), config.getVanusConfig().getEventbus());
@@ -82,7 +78,7 @@ public class SourceWorker implements ConnectorWorker {
         try {
             sender.close();
         } catch (IOException e) {
-            LOGGER.error("httpClient close", e);
+            LOGGER.error("sender close", e);
         }
         LOGGER.info("source worker stopped");
     }
@@ -98,7 +94,7 @@ public class SourceWorker implements ConnectorWorker {
         while (isRunning) {
             try {
                 Tuple tuple = queue.poll(5, TimeUnit.SECONDS);
-                if (tuple==null) {
+                if (tuple == null) {
                     continue;
                 }
                 this.doSend(tuple);
@@ -109,17 +105,16 @@ public class SourceWorker implements ConnectorWorker {
     }
 
     private void doSend(Tuple tuple) {
-        List<CloudEvent> events = tuple.getEventList();
+        List<Element> events = tuple.getElements();
 
         this.total.addAndGet(events.size());
 
         int attempt = 0;
         Throwable t;
 
-        CloudEvent[] eventsArr = new CloudEvent[events.size()];
-
-        for (int i = 0; i< events.size();i++) {
-            eventsArr[i]=events.get(i);
+        List<CloudEvent> cloudEvents = new ArrayList<>();
+        for (Element e : events) {
+            cloudEvents.add(e.getEvent());
         }
 
         for (; ; ) {
@@ -127,10 +122,10 @@ public class SourceWorker implements ConnectorWorker {
             t = null;
             long start = System.currentTimeMillis();
             try {
-                this.sender.sendEvents(eventsArr);
+                this.sender.sendEvents(cloudEvents);
                 long spent = System.currentTimeMillis() - start;
                 if (spent > 1000) {
-                    LOGGER.warn("sent event too slow, spent: {}, attempt:{}, numbers: {}", spent, attempt, eventsArr.length);
+                    LOGGER.warn("sent event too slow, spent: {}, attempt:{}, numbers: {}", spent, attempt, events.size());
                 }
                 break;
             } catch (Throwable e) {
@@ -139,11 +134,11 @@ public class SourceWorker implements ConnectorWorker {
 
             if (!isRunning || !needAttempt(attempt)) {
                 LOGGER.warn("send event failed, attempt:{}, numbers: {}, attempts: {}, events: {}",
-                        attempt, eventsArr.length, attempt, events, t);
+                        attempt, events.size(), attempt, events, t);
                 break;
             }
             LOGGER.info("send event has error will retry, attempt:{}, numbers: {}, attempts: {}, error: {}",
-                    attempt, eventsArr.length, attempt, t.getMessage());
+                    attempt, events.size(), attempt, t.getMessage());
 
             try {
                 Thread.sleep(Sleep.Backoff(attempt, 5000));
@@ -151,10 +146,16 @@ public class SourceWorker implements ConnectorWorker {
                 e.printStackTrace();
             }
         }
-        if (t==null) {
-            tuple.getSuccess().call();
-        } else {
-            tuple.getFailed().call(t.getMessage());
+        try {
+            if (t == null) {
+                tuple.getSuccess().call();
+            } else {
+                // TODO wenfeng how process failed elements?
+                tuple.getFailed().call(events, null, t.getMessage());
+            }
+        } catch (InterruptedException e) {
+            LOGGER.warn("failed to exec callback");
+            e.printStackTrace();
         }
     }
 }
