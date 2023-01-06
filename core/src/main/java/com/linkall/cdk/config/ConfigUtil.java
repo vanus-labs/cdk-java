@@ -32,11 +32,11 @@ public class ConfigUtil {
     private static final Logger LOGGER = LoggerFactory.getLogger(ConfigUtil.class);
 
     public static Config parse(Class<? extends Config> c) throws Exception {
-        if (c==null) {
+        if (c == null) {
             return null;
         }
         Config cfg = parseConfig(c);
-        if (cfg.secretClass()!=null) {
+        if (cfg.secretClass() != null) {
             Object secret;
             try {
                 secret = parseSecret(cfg.secretClass());
@@ -46,7 +46,7 @@ public class ConfigUtil {
             }
             for (Method method : c.getMethods()) {
                 Class<?>[] clazz = method.getParameterTypes();
-                if (clazz.length==1 && clazz[0].equals(cfg.secretClass())) {
+                if (clazz.length == 1 && clazz[0].equals(cfg.secretClass())) {
                     method.invoke(cfg, secret);
                     return cfg;
                 }
@@ -59,7 +59,7 @@ public class ConfigUtil {
 
     private static Config parseConfig(Class<? extends Config> c) throws Exception {
         String configFile = System.getenv(Constants.ENV_CONFIG_FILE);
-        if (configFile==null || configFile.isEmpty()) {
+        if (configFile == null || configFile.isEmpty()) {
             configFile = "config.yml";
         }
         return parse(c, configFile);
@@ -67,7 +67,7 @@ public class ConfigUtil {
 
     private static <T> T parseSecret(Class<T> c) throws Exception {
         String secretFile = System.getenv(Constants.ENV_SECRET_FILE);
-        if (secretFile==null || secretFile.isEmpty()) {
+        if (secretFile == null || secretFile.isEmpty()) {
             secretFile = "secret.yml";
         }
         return parse(c, secretFile);
@@ -86,7 +86,7 @@ public class ConfigUtil {
             return objectMapper.readValue(file, c);
         }
         URL url = ConfigUtil.class.getClassLoader().getResource(filePathName);
-        if (url==null) {
+        if (url == null) {
             throw new FileNotFoundException(filePathName);
         }
         return objectMapper.readValue(url, c);

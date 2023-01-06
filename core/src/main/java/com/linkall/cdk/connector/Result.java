@@ -4,11 +4,14 @@ package com.linkall.cdk.connector;
  * sink process event result
  */
 public class Result {
+    public static final Result SUCCESS = new Result(0, "success");
     private int code;
-
     private String msg;
 
-    public static final Result SUCCESS = new Result(0, "success");
+    public Result(int code, String msg) {
+        this.code = code;
+        this.msg = msg;
+    }
 
     public int getCode() {
         return code;
@@ -26,8 +29,8 @@ public class Result {
         this.msg = msg;
     }
 
-    public Result(int code, String msg) {
-        this.code = code;
-        this.msg = msg;
+    @Override
+    public String toString() {
+        return "{\"message\":\"" + this.msg + "\",\"code\":" + this.code + "}";
     }
 }

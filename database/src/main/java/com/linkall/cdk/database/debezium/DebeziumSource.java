@@ -16,9 +16,10 @@ package com.linkall.cdk.database.debezium;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.linkall.cdk.config.Config;
+import com.linkall.cdk.connector.Element;
+import com.linkall.cdk.connector.FailedCallback;
 import com.linkall.cdk.connector.Source;
 import com.linkall.cdk.connector.Tuple;
-import com.linkall.cdk.util.EventUtil;
 import io.cloudevents.CloudEvent;
 import io.cloudevents.CloudEventData;
 import io.cloudevents.core.v1.CloudEventBuilder;
@@ -88,7 +89,7 @@ public abstract class DebeziumSource implements Source, DebeziumEngine.ChangeCon
 
     @Override
     final public void destroy() throws Exception {
-        if (engine!=null)
+        if (engine != null)
             engine.close();
         executor.shutdown();
     }
@@ -112,34 +113,39 @@ public abstract class DebeziumSource implements Source, DebeziumEngine.ChangeCon
     final public void handleBatch(List<ChangeEvent<String, String>> records,
                                   DebeziumEngine.RecordCommitter<ChangeEvent<String, String>> committer)
             throws InterruptedException {
-        CountDownLatch latch = new CountDownLatch(records.size());
+        CountDownLatch latch = new CountDownLatch(1);
         LOGGER.info("Received event count {}", records.size());
+        Tuple t = new Tuple();
+
+        t.setSuccess(() -> {
+            LOGGER.debug("success to send {} records", records.size());
+            committer.markProcessed(records.get(records.size() - 1));
+            latch.countDown();
+        });
+
+        t.setFailed((FailedCallback<ChangeEvent<String, String>>) (success, failed, error) -> {
+            LOGGER.error("event send failed:{}, {}", error, failed);
+            committer.markProcessed(success.get(success.size() - 1).getOriginal());
+            latch.countDown();
+        });
+
         for (ChangeEvent<String, String> record : records) {
-            if (record.value()==null) {
-                latch.countDown();
+            if (record.value() == null) {
                 continue;
             }
+
             try {
-                CloudEvent ceEvent = this.convert(record.value());
-                events.put(
-                        new Tuple(ceEvent,
-                                () -> commit(latch, record, committer),
-                                (msg) -> {
-                                    LOGGER.error("event send failed:{},{}", msg, EventUtil.eventToJson(ceEvent));
-                                    commit(latch, record, committer);
-                                }
-                        )
-                );
+                t.addElement(new Element<>(this.convert(record.value()), record));
             } catch (IOException e) {
                 latch.countDown(); // How to process offset?
                 LOGGER.error("failed to parse record data {} to json, error: {}", record.value(), e);
             }
         }
-        latch.await();
+        this.events.put(t);
         LOGGER.info("Received event count await {}", records.size());
+        latch.await();
         committer.markBatchFinished();
         LOGGER.info("Received event count end {}", records.size());
-
     }
 
     final protected void start() {
@@ -158,23 +164,11 @@ public abstract class DebeziumSource implements Source, DebeziumEngine.ChangeCon
         Map<String, Object> m = this.mapper.readValue(record.getBytes(StandardCharsets.UTF_8), Map.class);
         CloudEventBuilder builder = new CloudEventBuilder();
         for (Map.Entry<String, Object> entry : m.entrySet()) {
-            if (entry.getValue()==null) {
+            if (entry.getValue() == null) {
                 continue;
             }
             this.adapt(builder, entry.getKey(), entry.getValue());
         }
         return builder.build();
-    }
-
-    private void commit(
-            CountDownLatch latch,
-            ChangeEvent<String, String> record,
-            DebeziumEngine.RecordCommitter<ChangeEvent<String, String>> committer) {
-        try {
-            committer.markProcessed(record);
-        } catch (InterruptedException e) {
-            LOGGER.warn("Failed to mark processed record: {},error: {}", record.value(), e);
-        }
-        latch.countDown();
     }
 }

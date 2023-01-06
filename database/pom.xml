@@ -7,7 +7,7 @@
     <parent>
         <groupId>com.linkall.cdk</groupId>
         <artifactId>cdk-parent</artifactId>
-        <version>0.4.0-SNAPSHOT</version>
+        <version>0.5.0-SNAPSHOT</version>
     </parent>
 
     <artifactId>cdk-database</artifactId>
@@ -15,7 +15,7 @@
 
     <properties>
         <module-name>con.linkall.cdk.database</module-name>
-        <debezium.version>2.0.1.Final</debezium.version>
+        <debezium.version>2.1.1.Final</debezium.version>
     </properties>
 
     <dependencies>

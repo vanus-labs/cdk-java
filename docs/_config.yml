@@ -6,7 +6,7 @@ baseurl: "/cdk-java"
 url: "https://linkall-labs.github.io"
 remote_theme: just-the-docs/just-the-docs
 plugins:
-    - jemoji
+  - jemoji
 
 search_enabled: true
 
@@ -18,21 +18,21 @@ gh_edit_source: docs
 gh_edit_view_mode: "tree"
 
 aux_links:
-    "GitHub Repository":
-        - "https://github.com/linkall-labs/cdk-java"
-    "Linkall home":
-        - "https://linkall.com/"
+  "GitHub Repository":
+    - "https://github.com/linkall-labs/cdk-java"
+  "Linkall home":
+    - "https://linkall.com/"
 back_to_top: true
 back_to_top_text: "Back to top"
 
 footer_content: "Copyright &copy; 2022 Linkall, Inc."
 
 compress_html:
-    clippings: all
-    comments: all
-    endings: all
-    startings: []
-    blanklines: false
-    profile: false
-    # ignore:
-    #   envs: all
+  clippings: all
+  comments: all
+  endings: all
+  startings: [ ]
+  blanklines: false
+  profile: false
+  # ignore:
+  #   envs: all

@@ -1,6 +1,5 @@
 ---
-title: Vance APIs
-nav_order: 2
+title: Vance APIs nav_order: 2
 ---
 
 # Vance APIs
@@ -26,6 +25,7 @@ The `Sink` and `Source` Interfaces reflect the [Sink and Source Concepts][concep
 ![connector](images/connector.png)
 
 You have to implement the corresponding interface when developing a connector.
+
 ```java
 public interface Sink {
     // write your codes in this start() method
@@ -34,7 +34,7 @@ public interface Sink {
 ```
 
 ```java
-public interface Source extends Sink{
+public interface Source extends Sink {
     // A source connector must implement this method to specify an Adapter to tell how the connector will
     // transform incoming data into a CloudEvent.
     Adapter getAdapter();
@@ -43,8 +43,8 @@ public interface Source extends Sink{
 
 ## Adapter Interface
 
-`Adapter` is an abstract concept used to demonstrate how the Source connector will transform incoming data into
-a CloudEvent.
+`Adapter` is an abstract concept used to demonstrate how the Source connector will transform incoming data into a
+CloudEvent.
 
 Currently, your concrete Adapter MUST implement either the `Adapter1`, or the `Adapter2` interface.
 
@@ -58,6 +58,7 @@ For example, if the incoming data is a pure String, you should choose `Adapter1`
 ```java
 public class StringAdapter implements Adapter1<String> {
     private static final CloudEventBuilder template = CloudEventBuilder.v1();
+
     @Override
     public CloudEvent adapt(String originalData) {
         template.withId(UUID.randomUUID().toString());
@@ -68,8 +69,8 @@ public class StringAdapter implements Adapter1<String> {
         template.withTime(OffsetDateTime.now());
 
         JsonObject data = new JsonObject();
-        data.put("mydata",originalData);
-        
+        data.put("mydata", originalData);
+
         template.withData(data.toBuffer().getBytes());
 
         return template.build();
@@ -77,12 +78,13 @@ public class StringAdapter implements Adapter1<String> {
 }
 ```
 
-If the incoming data is an HTTP request and, you need both headers and the body to generate a CloudEvent, 
-then you should choose `Adapter2`, with `HttpServerRequest` and `Buffer` as its generic type, to use.
+If the incoming data is an HTTP request and, you need both headers and the body to generate a CloudEvent, then you
+should choose `Adapter2`, with `HttpServerRequest` and `Buffer` as its generic type, to use.
 
 ```java
-class HttpAdapter implements Adapter2<HttpServerRequest,Buffer> {
+class HttpAdapter implements Adapter2<HttpServerRequest, Buffer> {
     private static final CloudEventBuilder template = CloudEventBuilder.v1();
+
     @Override
     public CloudEvent adapt(HttpServerRequest req, Buffer buffer) {
         template.withId(UUID.randomUUID().toString());
@@ -94,11 +96,11 @@ class HttpAdapter implements Adapter2<HttpServerRequest,Buffer> {
 
         JsonObject data = new JsonObject();
         JsonObject headers = new JsonObject();
-        req.headers().forEach((m)-> headers.put(m.getKey(),m.getValue()));
-        data.put("headers",headers);
+        req.headers().forEach((m) -> headers.put(m.getKey(), m.getValue()));
+        data.put("headers", headers);
         JsonObject body = buffer.toJsonObject();
-        data.put("body",body);
-        
+        data.put("body", body);
+
         template.withData(data.toBuffer().getBytes());
 
         return template.build();

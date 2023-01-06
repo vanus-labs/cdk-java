@@ -11,14 +11,14 @@ public class KVStoreFactory {
     }
 
     public synchronized static KVStore createKVStore() throws Exception {
-        if (kvStore==null) {
+        if (kvStore == null) {
             initKVStore();
         }
         return kvStore;
     }
 
     public static void initKVStore() throws Exception {
-        if (storeConfig==null) {
+        if (storeConfig == null) {
             kvStore = new MemoryKVStoreImpl();
             return;
         }

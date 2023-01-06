@@ -1,6 +1,5 @@
 ---
-title: HTTP Implementation
-nav_order: 5
+title: HTTP Implementation nav_order: 5
 ---
 
 # HTTP Implementation
@@ -11,10 +10,10 @@ To speed up the development of a vance connector, the CDK offers a number of HTT
 
 ![httpserver](images/httpserver.png)
 
-`HttpServer` allows you to easily create an HTTP server (based on [Vert.x]). 
+`HttpServer` allows you to easily create an HTTP server (based on [Vert.x]).
 
 ```java
-HttpServer server = HttpServer.createHttpServer();
+HttpServer server=HttpServer.createHttpServer();
 ```
 
 ### Getting notified of incoming requests

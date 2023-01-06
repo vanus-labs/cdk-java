@@ -3,6 +3,7 @@ package com.linkall.cdk.example.source;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.linkall.cdk.config.Config;
+import com.linkall.cdk.connector.Element;
 import com.linkall.cdk.connector.Source;
 import com.linkall.cdk.connector.Tuple;
 import com.linkall.cdk.util.EventUtil;
@@ -24,8 +25,8 @@ public class MySource implements Source {
     private final ObjectMapper objectMapper;
 
     private final BlockingQueue<Tuple> queue;
-    private ExampleConfig config;
     private final ScheduledExecutorService executor;
+    private ExampleConfig config;
     private int num;
 
     public MySource() {
@@ -52,9 +53,9 @@ public class MySource implements Source {
         executor.scheduleAtFixedRate(() -> {
             try {
                 CloudEvent event = makeEvent(num++);
-                queue.put(new Tuple(event, () ->
+                queue.put(new Tuple(new Element(event, null), () ->
                         LOGGER.info("send event success {}", EventUtil.eventToJson(event))
-                        , (msg) -> LOGGER.info("send event failed:{}, {}", msg, EventUtil.eventToJson(event))));
+                        , (success, failed, msg) -> LOGGER.info("send event failed:{}, {}", msg, EventUtil.eventToJson(event))));
             } catch (Exception e) {
                 LOGGER.error("error", e);
             }

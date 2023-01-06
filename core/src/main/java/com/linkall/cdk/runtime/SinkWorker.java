@@ -1,9 +1,8 @@
-package com.linkall.cdk.runtime.http;
+package com.linkall.cdk.runtime;
 
 import com.linkall.cdk.config.SinkConfig;
 import com.linkall.cdk.connector.Result;
 import com.linkall.cdk.connector.Sink;
-import com.linkall.cdk.runtime.ConnectorWorker;
 import io.cloudevents.CloudEvent;
 import io.cloudevents.core.message.MessageReader;
 import io.cloudevents.http.vertx.VertxMessageFactory;
@@ -72,7 +71,7 @@ public class SinkWorker implements ConnectorWorker {
             HttpServerResponse response = request.response();
             try {
                 Result result = this.sink.Arrived(event);
-                if (result==null || result==Result.SUCCESS) {
+                if (result == null || result == Result.SUCCESS) {
                     request.response().end();
                 } else {
                     response.setStatusCode(result.getCode());

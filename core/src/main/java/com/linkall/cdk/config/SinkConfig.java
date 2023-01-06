@@ -7,12 +7,14 @@ public class SinkConfig extends Config {
     @JsonProperty("port")
     private Integer port;
 
+    private Integer grpcPort;
+
     public Integer getPort() {
-        if (port!=null) {
+        if (port != null) {
             return port;
         }
         String portStr = System.getenv(Constants.ENV_PORT);
-        if (portStr!=null && !portStr.isEmpty()) {
+        if (portStr != null && !portStr.isEmpty()) {
             try {
                 Integer port = Integer.parseInt(portStr);
                 return port;
@@ -24,5 +26,9 @@ public class SinkConfig extends Config {
 
     public void setPort(Integer port) {
         this.port = port;
+    }
+
+    public Integer getGRPCPort() {
+        return this.grpcPort;
     }
 }

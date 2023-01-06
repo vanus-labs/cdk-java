@@ -24,8 +24,8 @@ import com.linkall.cdk.connector.Connector;
 import com.linkall.cdk.connector.Sink;
 import com.linkall.cdk.connector.Source;
 import com.linkall.cdk.runtime.ConnectorWorker;
-import com.linkall.cdk.runtime.http.SinkWorker;
-import com.linkall.cdk.runtime.http.SourceWorker;
+import com.linkall.cdk.runtime.SinkWorker;
+import com.linkall.cdk.runtime.SourceWorker;
 import com.linkall.cdk.store.KVStoreFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -84,7 +84,7 @@ public class Application {
     }
 
     private static boolean isSink(Class<?> c) {
-        while (c!=null && c!=Object.class) {
+        while (c != null && c != Object.class) {
             if (isAssignableFrom(c, Sink.class)) {
                 return true;
             }
@@ -94,7 +94,7 @@ public class Application {
     }
 
     private static boolean isSource(Class<?> c) {
-        while (c!=null && c!=Object.class) {
+        while (c != null && c != Object.class) {
             if (isAssignableFrom(c, Source.class)) {
                 return true;
             }
