@@ -144,13 +144,13 @@
                     </execution>
                 </executions>
                 <configuration>
-                    <protocArtifact>com.google.protobuf:protoc:3.17.2:exe:${os.detected.classifier}</protocArtifact>
+                    <protocArtifact>com.google.protobuf:protoc:3.20.2:exe:${os.detected.classifier}</protocArtifact>
                     <pluginId>grpc-java</pluginId>
 
                     <clearOutputDirectory>false</clearOutputDirectory>
                     <!--                    <outputDirectory>${project.basedir}/src/main/java/</outputDirectory>-->
                     <outputDirectory>${project.build.directory}/generated-sources/protobuf</outputDirectory>
-                    <pluginArtifact>io.grpc:protoc-gen-grpc-java:1.39.0:exe:${os.detected.classifier}</pluginArtifact>
+                    <pluginArtifact>io.grpc:protoc-gen-grpc-java:1.45.1:exe:${os.detected.classifier}</pluginArtifact>
                 </configuration>
             </plugin>
         </plugins>
