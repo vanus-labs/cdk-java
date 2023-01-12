@@ -35,7 +35,6 @@ import org.apache.kafka.connect.source.SourceRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.net.URI;
 import java.time.Instant;
 import java.time.OffsetDateTime;
@@ -53,7 +52,7 @@ public abstract class DebeziumSource implements Source, DebeziumEngine.ChangeCon
     private DebeziumEngine<ChangeEvent<SourceRecord, SourceRecord>> engine;
     private ExecutorService executor;
     protected final JsonConverter jsonDataConverter = new JsonConverter();
-    protected static final String EXTENSION_NAME_PREFIX = "xvdebezium";
+    protected static final String EXTENSION_NAME_PREFIX = "xv";
 
     public DebeziumSource() {
         this.events = new LinkedBlockingQueue<>();
@@ -109,12 +108,14 @@ public abstract class DebeziumSource implements Source, DebeziumEngine.ChangeCon
             if (record.value()==null) {
                 continue;
             }
-            try {
-                t.addElement(new Element<>(this.convert(record.value()), record));
-            } catch (IOException e) {
-                latch.countDown(); // How to process offset?
-                LOGGER.error("failed to parse record data {} to json, error: {}", record.value(), e);
+            Struct struct = (Struct) record.value().value();
+            String op = struct.getString(Envelope.FieldName.OPERATION);
+            Operation operation = convertOperation(op);
+            if (operation==null) {
+                LOGGER.warn("unknown debezium op {}, record will ignore {}", op, record);
+                continue;
             }
+            t.addElement(new Element<>(this.convert(struct, operation), record));
         }
         this.events.put(t);
         LOGGER.info("Received event count await {}", records.size());
@@ -135,19 +136,20 @@ public abstract class DebeziumSource implements Source, DebeziumEngine.ChangeCon
         executor.execute(engine);
     }
 
-    protected CloudEvent convert(SourceRecord record) throws IOException {
-        CloudEventBuilder builder = CloudEventBuilder.v1();
-        Struct struct = (Struct) record.value();
+    protected CloudEvent convert(Struct struct, Operation operation) {
+        String op = struct.getString(Envelope.FieldName.OPERATION);
         Struct source = struct.getStruct(Envelope.FieldName.SOURCE);
         String connectorType = source.getString(AbstractSourceInfo.DEBEZIUM_CONNECTOR_KEY);
         String name = source.getString(AbstractSourceInfo.SERVER_NAME_KEY);
+        CloudEventBuilder builder = CloudEventBuilder.v1();
         builder.withId(UUID.randomUUID().toString())
                 .withSource(URI.create("/debezium/" + connectorType + "/" + name))
                 .withType("debezium." + connectorType + ".datachangeevent")
                 .withTime(OffsetDateTime.ofInstant(
                         Instant.ofEpochMilli(struct.getInt64(Envelope.FieldName.TIMESTAMP)), ZoneOffset.UTC))
                 .withData("application/json", eventData(struct))
-                .withExtension(extensionName("op"), struct.getString(Envelope.FieldName.OPERATION))
+                .withExtension(extensionName("debeziumop"), op)
+                .withExtension(extensionName("op"), operation.getCode())
                 .withExtension(extensionName("name"), name);
         eventExtension(builder, struct);
         return builder.build();
@@ -174,6 +176,20 @@ public abstract class DebeziumSource implements Source, DebeziumEngine.ChangeCon
         }
         Schema dataSchema = struct.schema().field(fieldName).schema();
         return jsonDataConverter.fromConnectData("debezium", dataSchema, dataValue);
+    }
+
+    protected Operation convertOperation(String op) {
+        switch (op) {
+            case "r":
+            case "c":
+                return Operation.CREATE;
+            case "u":
+                return Operation.UPDATE;
+            case "d":
+                return Operation.DELETE;
+            default:
+                return null;
+        }
     }
 
 }
