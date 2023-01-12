@@ -19,6 +19,7 @@ import com.google.common.base.Preconditions;
 import com.linkall.cdk.store.KVStore;
 import com.linkall.cdk.store.KVStoreFactory;
 import org.apache.kafka.connect.json.JsonConverter;
+import org.apache.kafka.connect.json.JsonConverterConfig;
 import org.apache.kafka.connect.runtime.WorkerConfig;
 import org.apache.kafka.connect.storage.Converter;
 import org.apache.kafka.connect.storage.MemoryOffsetBackingStore;
@@ -70,12 +71,14 @@ public class KvStoreOffsetBackingStore extends MemoryOffsetBackingStore {
                 Optional.ofNullable(map.get(OFFSET_STORAGE_KV_STORE_KEY_CONFIG)).orElse(DEFAULT_KEY_NAME);
         // read from config
         String offsetConfigValue = map.get(OFFSET_CONFIG_VALUE);
-        if (offsetConfigValue == null || offsetConfigValue.isEmpty()) {
+        if (offsetConfigValue==null || offsetConfigValue.isEmpty()) {
             return;
         }
         String serverName = map.get("name");
         Converter keyConverter = new JsonConverter();
-        keyConverter.configure(config.originals(), true);
+        Map<String, String> keyConfig = new HashMap<>();
+        keyConfig.put(JsonConverterConfig.SCHEMAS_ENABLE_CONFIG, "false");
+        keyConverter.configure(keyConfig, true);
         Map<String, Object> keyMap = new HashMap<>();
         keyMap.put("server", serverName);
         byte[] key = keyConverter.fromConnectData(serverName, null, Arrays.asList(serverName, keyMap));
@@ -98,7 +101,7 @@ public class KvStoreOffsetBackingStore extends MemoryOffsetBackingStore {
 
     private void load() {
         byte[] value = store.get(keyName);
-        if (value == null) {
+        if (value==null) {
             return;
         }
         loadFromKvStore(value);

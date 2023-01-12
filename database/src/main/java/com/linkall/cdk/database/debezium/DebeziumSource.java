@@ -14,83 +14,58 @@
 
 package com.linkall.cdk.database.debezium;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.linkall.cdk.config.Config;
 import com.linkall.cdk.connector.Element;
 import com.linkall.cdk.connector.FailedCallback;
 import com.linkall.cdk.connector.Source;
 import com.linkall.cdk.connector.Tuple;
 import io.cloudevents.CloudEvent;
-import io.cloudevents.CloudEventData;
-import io.cloudevents.core.v1.CloudEventBuilder;
+import io.cloudevents.core.builder.CloudEventBuilder;
+import io.debezium.connector.AbstractSourceInfo;
+import io.debezium.data.Envelope;
+import io.debezium.embedded.Connect;
 import io.debezium.engine.ChangeEvent;
 import io.debezium.engine.DebeziumEngine;
-import io.debezium.engine.format.CloudEvents;
 import io.debezium.engine.spi.OffsetCommitPolicy;
+import org.apache.kafka.connect.data.Schema;
+import org.apache.kafka.connect.data.Struct;
+import org.apache.kafka.connect.json.JsonConverter;
+import org.apache.kafka.connect.json.JsonConverterConfig;
+import org.apache.kafka.connect.source.SourceRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.net.URI;
-import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.*;
 
-public abstract class DebeziumSource implements Source, DebeziumEngine.ChangeConsumer<ChangeEvent<String, String>> {
-    private static final Logger LOGGER = LoggerFactory.getLogger(DebeziumSource.class);
-    private final ObjectMapper mapper = new ObjectMapper();
+public abstract class DebeziumSource implements Source, DebeziumEngine.ChangeConsumer<ChangeEvent<SourceRecord, SourceRecord>> {
+    protected static final Logger LOGGER = LoggerFactory.getLogger(DebeziumSource.class);
     private final BlockingQueue<Tuple> events;
     protected DebeziumConfig debeziumConfig;
-    private DebeziumEngine<ChangeEvent<String, String>> engine;
+    private DebeziumEngine<ChangeEvent<SourceRecord, SourceRecord>> engine;
     private ExecutorService executor;
+    protected final JsonConverter jsonDataConverter = new JsonConverter();
+    protected static final String EXTENSION_NAME_PREFIX = "xv";
 
     public DebeziumSource() {
         this.events = new LinkedBlockingQueue<>();
+        Map<String, String> ceJsonConfig = new HashMap<>();
+        ceJsonConfig.put(JsonConverterConfig.SCHEMAS_ENABLE_CONFIG, "false");
+        jsonDataConverter.configure(ceJsonConfig, false);
     }
-
-    protected void adapt(CloudEventBuilder builder, String key, Object value) throws IOException {
-        switch (key) {
-            case "id":
-                builder.withId(UUID.randomUUID().toString());
-                break;
-            case "source":
-                builder.withSource(URI.create(value.toString()));
-                break;
-            case "specversion":
-                break;
-            case "type":
-                builder.withType(value.toString());
-                break;
-            case "datacontenttype":
-                builder.withDataContentType(value.toString());
-                break;
-            case "dataschema":
-                builder.withDataSchema(URI.create(value.toString()));
-                break;
-            case "subject":
-                builder.withSubject(value.toString());
-                break;
-            case "time":
-                builder.withTime(OffsetDateTime.parse(value.toString()));
-                break;
-            case "data":
-                builder.withData(convertData(value));
-                break;
-            default:
-                builder.withExtension(key, value.toString());
-                break;
-        }
-    }
-
-    abstract protected CloudEventData convertData(Object data) throws IOException;
 
     @Override
     final public void destroy() throws Exception {
-        if (engine != null)
+        if (engine!=null) {
             engine.close();
+        }
         executor.shutdown();
     }
 
@@ -110,8 +85,8 @@ public abstract class DebeziumSource implements Source, DebeziumEngine.ChangeCon
     }
 
     @Override
-    final public void handleBatch(List<ChangeEvent<String, String>> records,
-                                  DebeziumEngine.RecordCommitter<ChangeEvent<String, String>> committer)
+    final public void handleBatch(List<ChangeEvent<SourceRecord, SourceRecord>> records,
+                                  DebeziumEngine.RecordCommitter<ChangeEvent<SourceRecord, SourceRecord>> committer)
             throws InterruptedException {
         CountDownLatch latch = new CountDownLatch(1);
         LOGGER.info("Received event count {}", records.size());
@@ -123,23 +98,24 @@ public abstract class DebeziumSource implements Source, DebeziumEngine.ChangeCon
             latch.countDown();
         });
 
-        t.setFailed((FailedCallback<ChangeEvent<String, String>>) (success, failed, error) -> {
+        t.setFailed((FailedCallback<ChangeEvent<SourceRecord, SourceRecord>>) (success, failed, error) -> {
             LOGGER.error("event send failed:{}, {}", error, failed);
             committer.markProcessed(success.get(success.size() - 1).getOriginal());
             latch.countDown();
         });
 
-        for (ChangeEvent<String, String> record : records) {
-            if (record.value() == null) {
+        for (ChangeEvent<SourceRecord, SourceRecord> record : records) {
+            if (record.value()==null) {
                 continue;
             }
-
-            try {
-                t.addElement(new Element<>(this.convert(record.value()), record));
-            } catch (IOException e) {
-                latch.countDown(); // How to process offset?
-                LOGGER.error("failed to parse record data {} to json, error: {}", record.value(), e);
+            Struct struct = (Struct) record.value().value();
+            String op = struct.getString(Envelope.FieldName.OPERATION);
+            Operation operation = convertOperation(op);
+            if (operation==null) {
+                LOGGER.warn("unknown debezium op {}, record will ignore {}", op, record);
+                continue;
             }
+            t.addElement(new Element<>(this.convert(struct, operation), record));
         }
         this.events.put(t);
         LOGGER.info("Received event count await {}", records.size());
@@ -149,7 +125,7 @@ public abstract class DebeziumSource implements Source, DebeziumEngine.ChangeCon
     }
 
     final protected void start() {
-        engine = DebeziumEngine.create(CloudEvents.class)
+        engine = DebeziumEngine.create(Connect.class)
                 .using(this.debeziumConfig.getProperties())
                 .using(OffsetCommitPolicy.always())
                 .notifying(this)
@@ -160,15 +136,60 @@ public abstract class DebeziumSource implements Source, DebeziumEngine.ChangeCon
         executor.execute(engine);
     }
 
-    private CloudEvent convert(String record) throws IOException {
-        Map<String, Object> m = this.mapper.readValue(record.getBytes(StandardCharsets.UTF_8), Map.class);
-        CloudEventBuilder builder = new CloudEventBuilder();
-        for (Map.Entry<String, Object> entry : m.entrySet()) {
-            if (entry.getValue() == null) {
-                continue;
-            }
-            this.adapt(builder, entry.getKey(), entry.getValue());
-        }
+    protected CloudEvent convert(Struct struct, Operation operation) {
+        String op = struct.getString(Envelope.FieldName.OPERATION);
+        Struct source = struct.getStruct(Envelope.FieldName.SOURCE);
+        String connectorType = source.getString(AbstractSourceInfo.DEBEZIUM_CONNECTOR_KEY);
+        String name = source.getString(AbstractSourceInfo.SERVER_NAME_KEY);
+        CloudEventBuilder builder = CloudEventBuilder.v1();
+        builder.withId(UUID.randomUUID().toString())
+                .withSource(URI.create("/debezium/" + connectorType + "/" + name))
+                .withType("debezium." + connectorType + ".datachangeevent")
+                .withTime(OffsetDateTime.ofInstant(
+                        Instant.ofEpochMilli(struct.getInt64(Envelope.FieldName.TIMESTAMP)), ZoneOffset.UTC))
+                .withData("application/json", eventData(struct))
+                .withExtension(extensionName("debeziumop"), op)
+                .withExtension(extensionName("debeziumname"), name)
+                .withExtension(extensionName("op"), operation.getCode());
+        eventExtension(builder, struct);
         return builder.build();
     }
+
+    protected static String extensionName(String name) {
+        return EXTENSION_NAME_PREFIX + name;
+    }
+
+    /**
+     * build event extension
+     *
+     * @param builder CloudEventBuilder
+     * @param struct  SourceRecord value
+     */
+    protected abstract void eventExtension(CloudEventBuilder builder, Struct struct);
+
+    protected byte[] eventData(Struct struct) {
+        String fieldName = Envelope.FieldName.AFTER;
+        Object dataValue = struct.get(fieldName);
+        if (dataValue==null) {
+            fieldName = Envelope.FieldName.BEFORE;
+            dataValue = struct.get(fieldName);
+        }
+        Schema dataSchema = struct.schema().field(fieldName).schema();
+        return jsonDataConverter.fromConnectData("debezium", dataSchema, dataValue);
+    }
+
+    protected Operation convertOperation(String op) {
+        switch (op) {
+            case "r":
+            case "c":
+                return Operation.CREATE;
+            case "u":
+                return Operation.UPDATE;
+            case "d":
+                return Operation.DELETE;
+            default:
+                return null;
+        }
+    }
+
 }
