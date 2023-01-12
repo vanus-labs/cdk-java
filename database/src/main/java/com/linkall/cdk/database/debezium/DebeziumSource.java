@@ -149,8 +149,8 @@ public abstract class DebeziumSource implements Source, DebeziumEngine.ChangeCon
                         Instant.ofEpochMilli(struct.getInt64(Envelope.FieldName.TIMESTAMP)), ZoneOffset.UTC))
                 .withData("application/json", eventData(struct))
                 .withExtension(extensionName("debeziumop"), op)
-                .withExtension(extensionName("op"), operation.getCode())
-                .withExtension(extensionName("name"), name);
+                .withExtension(extensionName("debeziumname"), name)
+                .withExtension(extensionName("op"), operation.getCode());
         eventExtension(builder, struct);
         return builder.build();
     }
